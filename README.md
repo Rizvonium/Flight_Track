@@ -11,6 +11,10 @@
 - click any departure/return pair on a heat-map of round-trip prices
 - hover the 60-day price history for each leg
 - set your own price target and get a book-now / wait signal per leg
+- see **price by booking day × travel date** for both directions: the recorded part (Sep 3 → today) and a projection up to each flight, as a heat-map or 3D surface
+- see a projection for your chosen dates (likely price and range) and a comparison of booking strategies, e.g. book both today, return now and outbound later, 30 days out, or the last week
+
+The projection is a simulation, not a forecast. It runs 400 possible futures per travel date. Fares jump in steps of the same size and frequency as in the recorded history and follow an adjustable trend: a dip 4–6 weeks out, a rise in the last 3 weeks, and a chance of a snow or closure spike on the return.
 
 **Deploy to Vercel**
 1. Go to [vercel.com/new](https://vercel.com/new) and import `rizvonium/flight_track`.
