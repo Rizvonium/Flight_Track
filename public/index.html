@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kashmir Fare Watch</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Delhi ⇄ Srinagar fares for a January 2027 trip: date grid, 60-day price history and when to book.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a boarding-pass header, then a single working column: summary → date grid → price history → flights → context */
+:root {
+  --bg: #f3f6f8;          /* snow light, faint glacier bias */
+  --panel: #ffffff;
+  --ink: #13202c;
+  --ink-2: #4c5966;
+  --ink-3: #7b8794;
+  --rule: #dde3e8;
+  --accent: #0d6f7d;      /* glacier teal: controls, selection */
+  --accent-soft: #e0f0f2;
+  --out: #2a78d6;         /* series 1: Delhi → Srinagar */
+  --ret: #eb6834;         /* series 2: Srinagar → Delhi */
+  --band: #e3e8ec;
+  --seq-lo: #e8f1fb;
+  --seq-hi: #1d5fae;
+  --good: #1d7a3e; --good-bg: #e2f3e7;
+  --warn: #8a5a00; --warn-bg: #fbf0d6;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f161d; --panel: #16212b; --ink: #e8eef3; --ink-2: #aab6c1; --ink-3: #7d8a96; --rule: #26333f;
+  --accent: #4fb8c6; --accent-soft: #173640; --out: #3987e5; --ret: #d95926; --band: #22303c;
+  --seq-lo: #1a2a3a; --seq-hi: #5aa0f0; --good: #6fd08f; --good-bg: #15301f; --warn: #f0c060; --warn-bg: #352a10;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0f161d; --panel: #16212b; --ink: #e8eef3; --ink-2: #aab6c1; --ink-3: #7d8a96; --rule: #26333f;
+  --accent: #4fb8c6; --accent-soft: #173640; --out: #3987e5; --ret: #d95926; --band: #22303c;
+  --seq-lo: #1a2a3a; --seq-hi: #5aa0f0; --good: #6fd08f; --good-bg: #15301f; --warn: #f0c060; --warn-bg: #352a10;
+  color-scheme: dark; }
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--f-body); }
+.wrap { max-width: 1080px; margin: 0 auto; padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 28px; }
+h1, h2 { font-family: var(--f-display); font-weight: 700; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: 1.25rem; }
+.lede { color: var(--ink-2); margin: 4px 0 0; max-width: 62ch; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); font-weight: 600; }
+.num { font-variant-numeric: tabular-nums; }
+section { display: grid; gap: 14px; min-width: 0; }
+.panel { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 18px; min-width: 0; }
+
+/* boarding-pass header */
+.pass { display: grid; grid-template-columns: 1fr auto; gap: 18px 28px; align-items: end; }
+.route { display: flex; align-items: center; gap: 14px; font-family: var(--f-display); font-weight: 700; font-size: clamp(2.4rem, 7vw, 3.8rem); line-height: 1; }
+.route .arrow { color: var(--accent); font-weight: 500; font-size: 0.6em; }
+.route small { display: block; font: 500 0.75rem/1.3 var(--f-mono); color: var(--ink-3); letter-spacing: 0.02em; margin-top: 6px; }
+.stub { border-left: 2px dashed var(--rule); padding-left: 20px; display: grid; gap: 2px; }
+.stub .mono { font-size: 0.85rem; color: var(--ink-2); }
+
+/* controls */
+.controls { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; }
+.ctrl { display: flex; align-items: center; gap: 10px; }
+.stepper { display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; background: var(--panel); }
+.stepper button { all: unset; cursor: pointer; width: 34px; height: 34px; text-align: center; font-size: 1.1rem; color: var(--ink); }
+.stepper button:hover { background: var(--accent-soft); }
+.stepper button:focus-visible, .toggle input:focus-visible + span, .cell:focus-visible, .chip:focus-visible, input[type=number]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.stepper output { min-width: 30px; display: grid; place-items: center; font-weight: 600; border-inline: 1px solid var(--rule); }
+.toggle { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+.toggle input { position: absolute; opacity: 0; pointer-events: none; }
+.toggle span { width: 36px; height: 20px; border-radius: 20px; background: var(--rule); position: relative; transition: background .15s; }
+.toggle span::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--panel); transition: transform .15s; box-shadow: 0 1px 2px rgb(0 0 0 / .25); }
+.toggle input:checked + span { background: var(--accent); }
+.toggle input:checked + span::after { transform: translateX(16px); }
+.target { display: inline-flex; align-items: center; gap: 6px; }
+.target input { width: 92px; padding: 6px 8px; border: 1px solid var(--rule); border-radius: 8px; background: var(--panel); color: var(--ink); font: 500 0.9rem var(--f-mono); }
+
+/* summary */
+.summary { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 0; padding: 0; overflow: hidden; }
+.summary > div { padding: 18px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.summary > div + div { border-left: 1px solid var(--rule); }
+.total { font-family: var(--f-display); font-weight: 700; font-size: 2.3rem; line-height: 1.05; }
+.leg-head { display: flex; align-items: center; gap: 8px; }
+.swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.fare { font-size: 1.35rem; font-weight: 600; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; width: fit-content; }
+.pill.good { background: var(--good-bg); color: var(--good); }
+.pill.warn { background: var(--warn-bg); color: var(--warn); }
+.pill svg { width: 12px; height: 12px; }
+.why { font-size: 0.85rem; color: var(--ink-2); margin: 0; }
+
+/* heatmap */
+.hm-scroll { overflow-x: auto; }
+.hm { display: grid; gap: 3px; min-width: 640px; }
+.hm .ax { font: 500 0.72rem var(--f-mono); color: var(--ink-3); display: grid; place-items: center; text-align: center; line-height: 1.15; }
+.hm .ax.row { justify-items: end; padding-right: 6px; }
+.cell { all: unset; box-sizing: border-box; height: 40px; border-radius: 4px; display: grid; place-items: center; font: 500 0.72rem var(--f-mono); cursor: pointer; position: relative; }
+.cell.na { background: transparent; border: 1px dashed var(--rule); cursor: default; }
+.cell.sel { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--ink); z-index: 1; }
+.cell.best::after { content: ""; position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 2px var(--panel); }
+.cell.dim { opacity: 0.45; }
+.legend { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; font-size: 0.8rem; color: var(--ink-2); }
+.ramp { width: 120px; height: 10px; border-radius: 3px; background: linear-gradient(90deg, var(--seq-lo), var(--seq-hi)); }
+
+/* charts */
+.charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.chart { position: relative; }
+.chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chart text { fill: var(--ink-3); font: 11px var(--f-mono); }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--bg); padding: 6px 9px; border-radius: 6px; font: 500 0.78rem/1.35 var(--f-body); white-space: nowrap; transform: translate(-50%, -100%); margin-top: -10px; }
+.chart-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+
+/* flights */
+.flights { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th { text-align: left; font-weight: 600; color: var(--ink-3); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 6px 6px; border-bottom: 1px solid var(--rule); }
+td { padding: 7px 6px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+td.r, th.r { text-align: right; }
+tr.cheap td { background: var(--accent-soft); }
+.stops0 { color: var(--good); font-weight: 600; }
+.stops1 { color: var(--ink-2); }
+.tbl { overflow-x: auto; }
+
+/* events */
+.events { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.event { display: grid; gap: 4px; padding: 14px; border: 1px solid var(--rule); border-radius: 8px; background: var(--panel); }
+.event .fare { font: 600 0.95rem var(--f-mono); }
+.event a { color: var(--accent); font-size: 0.8rem; text-underline-offset: 2px; }
+footer { color: var(--ink-3); font-size: 0.8rem; display: grid; gap: 6px; max-width: 75ch; }
+footer a { color: var(--accent); }
+
+@media (max-width: 820px) {
+  .summary { grid-template-columns: 1fr; }
+  .summary > div + div { border-left: 0; border-top: 1px solid var(--rule); }
+  .charts, .flights { grid-template-columns: 1fr; }
+  .pass { grid-template-columns: 1fr; }
+  .stub { border-left: 0; border-top: 2px dashed var(--rule); padding: 12px 0 0; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="pass">
+    <div>
+      <div class="label">Kashmir Fare Watch · winter 2027</div>
+      <div class="route" aria-label="Delhi to Srinagar and back">
+        <div>DEL<small>New Delhi · 216 m</small></div>
+        <div class="arrow">⇄</div>
+        <div>SXR<small>Srinagar · 1,655 m</small></div>
+      </div>
+    </div>
+    <div class="stub">
+      <span class="label">Fares checked</span>
+      <span class="mono" id="asof"></span>
+      <span class="label" style="margin-top:6px">Source</span>
+      <span class="mono">Google Flights, economy</span>
+    </div>
+  </header>
+
+  <div class="controls" role="group" aria-label="Trip settings">
+    <div class="ctrl"><span class="label">Travellers</span>
+      <div class="stepper"><button id="pax-minus" aria-label="Fewer travellers">−</button><output id="pax">2</output><button id="pax-plus" aria-label="More travellers">+</button></div>
+    </div>
+    <label class="ctrl toggle" for="nonstop"><input type="checkbox" id="nonstop"><span></span>Nonstop only</label>
+    <label class="ctrl target" for="target"><span class="label">My target, per person ₹</span><input type="number" id="target" min="2000" step="100" value="6000"></label>
+  </div>
+
+  <div class="panel summary" aria-live="polite">
+    <div>
+      <span class="label" id="sum-label">Round trip</span>
+      <span class="total num" id="sum-total"></span>
+      <span class="why" id="sum-dates"></span>
+    </div>
+    <div id="leg-out"></div>
+    <div id="leg-ret"></div>
+  </div>
+
+  <section>
+    <div>
+      <h2>Pick your dates</h2>
+      <p class="lede">Cheapest round trip per person for each pair of dates. Click a square to see that trip below. Faded squares are stays shorter than 5 days or longer than 16.</p>
+    </div>
+    <div class="panel">
+      <div class="hm-scroll"><div class="hm" id="hm"></div></div>
+      <div class="legend" style="margin-top:12px">
+        <span>Cheaper</span><span class="ramp"></span><span>Pricier</span>
+        <span style="display:inline-flex;align-items:center;gap:6px"><span class="swatch" style="background:var(--good);border-radius:50%;width:8px;height:8px"></span>Cheapest pair</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div>
+      <h2>How the price for your dates has moved</h2>
+      <p class="lede">Google Flights' record of the cheapest one-way fare per person for each date over the last 60 days. The grey band is what Google considers a normal price for this route. The dashed line is your target.</p>
+    </div>
+    <div class="charts">
+      <div class="panel chart" id="ch-out"></div>
+      <div class="panel chart" id="ch-ret"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Flights on your dates</h2>
+    <div class="flights">
+      <div class="panel" id="fl-out"></div>
+      <div class="panel" id="fl-ret"></div>
+    </div>
+  </section>
+
+  <section>
+    <div>
+      <h2>Why fares out of Srinagar jump</h2>
+      <p class="lede">Past fare spikes on this route came from events, not slow drift. A ticket you have already bought protects you from all of these.</p>
+    </div>
+    <div class="events" id="events"></div>
+  </section>
+
+  <footer>
+    <span>Prices are for economy, including taxes, from Google Flights on the date shown. They change many times a day. Always confirm on the airline's site before paying.</span>
+    <span>The advice to book or wait compares today's cheapest fare with Google's normal range and its 60-day low. If a fare stays high, the cut-off is 30 days before departure, because domestic fares in India usually rise sharply in the last 2–3 weeks.</span>
+    <span>Data and code: <a href="https://github.com/rizvonium/flight_track" target="_blank" rel="noopener">github.com/rizvonium/flight_track</a></span>
+  </footer>
+</div>
+
+<script>
+const DATA = {"asOf":"2026-11-01","grid":{"DEL-SXR":{"2027-01-03":[{"a":"SpiceJet","f":"SG160 / SG160","d":"12:30","r":"15:20","s":1,"p":7375},{"a":"SpiceJet","f":"SG199","d":"12:45","r":"14:15","s":0,"p":7915},{"a":"IndiGo","f":"6E5270 / 6E6111","d":"12:35","r":"17:15","s":1,"p":8458},{"a":"IndiGo","f":"6E5304","d":"08:40","r":"10:05","s":0,"p":8611},{"a":"Air India","f":"AI1709","d":"07:40","r":"09:10","s":0,"p":9754},{"a":"IndiGo","f":"6E877","d":"06:45","r":"08:10","s":0,"p":10606},{"a":"IndiGo","f":"6E2248","d":"17:55","r":"19:35","s":0,"p":10606},{"a":"IndiGo","f":"6E2037","d":"16:40","r":"18:10","s":0,"p":14931}],"2027-01-04":[{"a":"SpiceJet","f":"SG160 / SG160","d":"12:30","r":"15:20","s":1,"p":6512},{"a":"SpiceJet","f":"SG199","d":"12:45","r":"14:15","s":0,"p":7915},{"a":"SpiceJet","f":"SG904","d":"11:55","r":"13:25","s":0,"p":7915},{"a":"IndiGo","f":"6E5304","d":"08:40","r":"10:05","s":0,"p":7922},{"a":"IndiGo","f":"6E2496","d":"12:30","r":"14:00","s":0,"p":9346},{"a":"Air India","f":"AI1709","d":"07:40","r":"09:10","s":0,"p":9754},{"a":"IndiGo","f":"6E2037","d":"16:40","r":"18:10","s":0,"p":9766},{"a":"Akasa Air","f":"QP1802","d":"12:10","r":"13:50","s":0,"p":10212},{"a":"IndiGo","f":"6E877","d":"06:45","r":"08:10","s":0,"p":10606},{"a":"IndiGo","f":"6E2248","d":"17:55","r":"19:35","s":0,"p":11131},{"a":"Air India","f":"AI1739","d":"14:40","r":"16:20","s":0,"p":12652},{"a":"IndiGo","f":"6E912","d":"13:40","r":"15:10","s":0,"p":17931}],"2027-01-05":[{"a":"SpiceJet","f":"SG160 / SG160","d":"12:30","r":"15:20","s":1,"p":6306},{"a":"IndiGo","f":"6E6448 / 6E6495","d":"09:10","r":"15:00","s":1,"p":6783},{"a":"IndiGo","f":"6E6050 / 6E2145","d":"09:15","r":"16:55","s":1,"p":6889},{"a":"SpiceJet","f":"SG199","d":"12:45","r":"14:15","s":0,"p":7915},{"a":"SpiceJet","f":"SG904","d":"11:55","r":"13:25","s":0,"p":7915},{"a":"IndiGo","f":"6E877","d":"06:45","r":"08:10","s":0,"p":7922},{"a":"IndiGo","f":"6E2496","d":"12:30","r":"14:00","s":0,"p":7922},{"a":"IndiGo","f":"6E2248","d":"17:55","r":"19:35","s":0,"p":7922},{"a":"Air India","f":"AI2539","d":"06:30","r":"08:05","s":0,"p":9172},{"a":"Air India","f":"AI1709","d":"07:40","r":"09:10","s":0,"p":9172},{"a":"IndiGo","f":"6E5304","d":"08:40","r":"10:05","s":0,"p":9346},{"a":"IndiGo","f":"6E2037","d":"16:40","r":"18:10","s":0,"p":9346},{"a":"Akasa Air","f":"QP1802","d":"12:10","r":"13:50","s":0,"p":9492},{"a":"Air India","f":"AI1739","d":"14:40","r":"16:20","s":0,"p":11413},{"a":"IndiGo","f":"6E912","d":"13:40","r":"15:10","s":0,"p":12031}],"2027-01-06":[{"a":"IndiGo","f":"6E5270 / 6E6111","d":"12:35","r":"17:15","s":1,"p":6889},{"a":"IndiGo","f":"6E2147 / 6E2145","d":"11:20","r":"16:55","s":1,"p":6889},{"a":"SpiceJet","f":"SG199","d":"12:45","r":"14:15","s":0,"p":7915},{"a":"SpiceJet","f":"SG904","d":"11:55","r":"13:25","s":0,"p":7915},{"a":"IndiGo","f":"6E5304","d":"08:40","r":"10:05","s":0,"p":7922},{"a":"IndiGo","f":"6E912","d":"13:40","r":"15:10","s":0,"p":7922},{"a":"IndiGo","f":"6E2496","d":"12:30","r":"14:00","s":0,"p":8611},{"a":"Air India","f":"AI1709","d":"07:40","r":"09:10","s":0,"p":9172},{"a":"Akasa Air","f":"QP1802","d":"12:10","r":"13:50","s":0,"p":9843},{"a":"IndiGo","f":"6E877","d":"06:45","r":"08:10","s":0,"p":10186},{"a":"Air India","f":"AI1739","d":"14:40","r":"16:20","s":0,"p":10563},{"a":"IndiGo","f":"6E2037","d":"16:40","r":"18:10","s":0,"p":12031},{"a":"IndiGo","f":"6E2248","d":"17:55","r":"19:35","s":0,"p":12031}],"2027-01-07":[{"a":"SpiceJet","f":"SG160 / SG160","d":"12:30","r":"15:20","s":1,"p":6512},{"a":"IndiGo","f":"6E6448 / 6E6495","d":"09:10","r":"15:00","s":1,"p":6783},{"a":"IndiGo","f":"6E6050 / 6E6871","d":"09:15","r":"14:05","s":1,"p":6889},{"a":"IndiGo","f":"6E5270 / 6E6111","d":"12:35","r":"17:15","s":1,"p":6889},{"a":"SpiceJet","f":"SG199","d":"12:45","r":"14:15","s":0,"p":7915},{"a":"SpiceJet","f":"SG904","d":"11:55","r":"13:25","s":0,"p":7915},{"a":"IndiGo","f":"6E912","d":"13:40","r":"15:10","s":0,"p":7922},{"a":"IndiGo","f":"6E2248","d":"17:55","r":"19:35","s":0,"p":7922},{"a":"IndiGo","f":"6E5304","d":"08:40","r":"10:05","s":0,"p":8296},{"a":"Air India","f":"AI1709","d":"07:40","r":"09:10","s":0,"p":9754},{"a":"IndiGo","f":"6E877","d":"06:45","r":"08:10","s":0,"p":9766},{"a":"Akasa Air","f":"QP1802","d":"12:10","r":"13:50","s":0,"p":9843},{"a":"IndiGo","f":"6E2496","d":"12:30","r":"14:00","s":0,"p":11131},{"a":"IndiGo","f":"6E2037","d":"16:40","r":"18:10","s":0,"p":12031},{"a":"Air India","f":"AI1739","d":"14:40","r":"16:20","s":0,"p":12652}],"2027-01-08":[{"a":"SpiceJet","f":"SG160 / SG160","d":"12:30","r":"15:20","s":1,"p":6306},{"a":"IndiGo","f":"6E6448 / 6E6495","d":"09:10","r":"15:00","s":1,"p":6783},{"a":"IndiGo","f":"6E6050 / 6E6871","d":"09:15","r":"14:05","s":1,"p":6889},{"a":"IndiGo","f":"6E5270 / 6E6111","d":"12:35","r":"17:15","s":1,"p":6889},{"a":"SpiceJet","f":"SG199","d":"12:45","r":"14:15","s":0,"p":7915},{"a":"SpiceJet","f":"SG904","d":"11:55","r":"13:25","s":0,"p":7915},{"a":"IndiGo","f":"6E5304","d":"08:40","r":"10:05","s":0,"p":7922},{"a":"IndiGo","f":"6E877","d":"06:45","r":"08:10","s":0,"p":7922},{"a":"IndiGo","f":"6E2037","d":"16:40","r":"18:10","s":0,"p":7922},{"a":"Air India","f":"AI2539","d":"06:30","r":"08:05","s":0,"p":9172},{"a":"Air India","f":"AI1709","d":"07:40","r":"09:10","s":0,"p":9172},{"a":"Air India","f":"AI1739","d":"14:40","r":"16:20","s":0,"p":9329},{"a":"IndiGo","f":"6E2496","d":"12:30","r":"14:00","s":0,"p":9346},{"a":"Akasa Air","f":"QP1802","d":"12:10","r":"13:50","s":0,"p":9843},{"a":"IndiGo","f":"6E912","d":"13:40","r":"15:10","s":0,"p":12931},{"a":"IndiGo","f":"6E2248","d":"17:55","r":"19:35","s":0,"p":12931}],"2027-01-09":[{"a":"SpiceJet","f":"SG160 / SG160","d":"12:30","r":"15:20","s":1,"p":6512},{"a":"IndiGo","f":"6E6448 / 6E6495","d":"09:10","r":"15:00","s":1,"p":6783},{"a":"IndiGo","f":"6E6050 / 6E2145","d":"09:15","r":"16:55","s":1,"p":6889},{"a":"IndiGo","f":"6E6050 / 6E6871","d":"09:15","r":"14:05","s":1,"p":7898},{"a":"SpiceJet","f":"SG199","d":"12:45","r":"14:15","s":0,"p":7915},{"a":"SpiceJet","f":"SG904","d":"11:55","r":"13:25","s":0,"p":7915},{"a":"IndiGo","f":"6E5304","d":"08:40","r":"10:05","s":0,"p":8296},{"a":"IndiGo","f":"6E877","d":"06:45","r":"08:10","s":0,"p":9346},{"a":"IndiGo","f":"6E2248","d":"17:55","r":"19:35","s":0,"p":9766},{"a":"IndiGo","f":"6E2496","d":"12:30","r":"14:00","s":0,"p":10186},{"a":"Akasa Air","f":"QP1802","d":"12:10","r":"13:50","s":0,"p":10994},{"a":"Air India","f":"AI1709","d":"07:40","r":"09:10","s":0,"p":11214},{"a":"IndiGo","f":"6E912","d":"13:40","r":"15:10","s":0,"p":12931},{"a":"IndiGo","f":"6E2037","d":"16:40","r":"18:10","s":0,"p":12931},{"a":"Air India","f":"AI1739","d":"14:40","r":"16:20","s":0,"p":14448}],"2027-01-10":[{"a":"SpiceJet","f":"SG160 / SG160","d":"12:30","r":"15:20","s":1,"p":7047},{"a":"IndiGo","f":"6E5270 / 6E6111","d":"12:35","r":"17:15","s":1,"p":7373},{"a":"SpiceJet","f":"SG199","d":"12:45","r":"14:15","s":0,"p":7915},{"a":"IndiGo","f":"6E877","d":"06:45","r":"08:10","s":0,"p":10186},{"a":"IndiGo","f":"6E5304","d":"08:40","r":"10:05","s":0,"p":10186},{"a":"IndiGo","f":"6E2248","d":"17:55","r":"19:35","s":0,"p":11131},{"a":"Air India","f":"AI1709","d":"07:40","r":"09:10","s":0,"p":12427},{"a":"IndiGo","f":"6E2037","d":"16:40","r":"18:10","s":0,"p":15931}],"2027-01-11":[{"a":"SpiceJet","f":"SG160 / SG160","d":"12:30","r":"15:20","s":1,"p":6759},{"a":"IndiGo","f":"6E6448 / 6E6495","d":"09:10","r":"15:00","s":1,"p":6783},{"a":"IndiGo","f":"6E5270 / 6E6111","d":"12:35","r":"17:15","s":1,"p":6889},{"a":"IndiGo","f":"6E6050 / 6E2145","d":"09:15","r":"16:55","s":1,"p":7373},{"a":"SpiceJet","f":"SG904","d":"11:55","r":"13:25","s":0,"p":7552},{"a":"SpiceJet","f":"SG199","d":"12:45","r":"14:15","s":0,"p":7915},{"a":"IndiGo","f":"6E2496","d":"12:30","r":"14:00","s":0,"p":7922},{"a":"IndiGo","f":"6E5304","d":"08:40","r":"10:05","s":0,"p":8296},{"a":"IndiGo","f":"6E912","d":"13:40","r":"15:10","s":0,"p":9766},{"a":"Akasa Air","f":"QP1802","d":"12:10","r":"13:50","s":0,"p":9843},{"a":"IndiGo","f":"6E877","d":"06:45","r":"08:10","s":0,"p":10186},{"a":"IndiGo","f":"6E2248","d":"17:55","r":"19:35","s":0,"p":10186},{"a":"Air India","f":"AI1709","d":"07:40","r":"09:10","s":0,"p":10379},{"a":"Air India","f":"AI1739","d":"14:40","r":"16:20","s":0,"p":11413},{"a":"IndiGo","f":"6E2037","d":"16:40","r":"18:10","s":0,"p":12931}],"2027-01-12":[{"a":"SpiceJet","f":"SG160 / SG160","d":"12:30","r":"15:20","s":1,"p":6306},{"a":"IndiGo","f":"6E5270 / 6E6111","d":"12:35","r":"17:15","s":1,"p":6442},{"a":"IndiGo","f":"6E6448 / 6E6495","d":"09:10","r":"15:00","s":1,"p":6783},{"a":"IndiGo","f":"6E2496","d":"12:30","r":"14:00","s":0,"p":6827},{"a":"SpiceJet","f":"SG904","d":"11:55","r":"13:25","s":0,"p":7552},{"a":"SpiceJet","f":"SG199","d":"12:45","r":"14:15","s":0,"p":7915},{"a":"IndiGo","f":"6E877","d":"06:45","r":"08:10","s":0,"p":8191},{"a":"Akasa Air","f":"QP1802","d":"12:10","r":"13:50","s":0,"p":8520},{"a":"Air India","f":"AI1709","d":"07:40","r":"09:10","s":0,"p":8694},{"a":"IndiGo","f":"6E5304","d":"08:40","r":"10:05","s":0,"p":9031},{"a":"Air India","f":"AI2539","d":"06:30","r":"08:05","s":0,"p":9754},{"a":"IndiGo","f":"6E2037","d":"16:40","r":"18:10","s":0,"p":10501},{"a":"IndiGo","f":"6E2248","d":"17:55","r":"19:35","s":0,"p":10501},{"a":"IndiGo","f":"6E912","d":"13:40","r":"15:10","s":0,"p":11026},{"a":"Air India","f":"AI1739","d":"14:40","r":"16:20","s":0,"p":12652}]},"SXR-DEL":{"2027-01-12":[{"a":"IndiGo","f":"6E229 / 6E5163","d":"14:45","r":"18:05","s":1,"p":6829},{"a":"IndiGo","f":"6E2148 / 6E2185","d":"17:35","r":"21:05","s":1,"p":6829},{"a":"IndiGo","f":"6E6112 / 6E2042","d":"17:55","r":"22:55","s":1,"p":6829},{"a":"SpiceJet","f":"SG161 / SG161","d":"16:05","r":"19:00","s":1,"p":6916},{"a":"IndiGo","f":"6E6496 / 6E6152","d":"15:40","r":"19:45","s":1,"p":7170},{"a":"SpiceJet","f":"SG181","d":"13:55","r":"15:25","s":0,"p":8706},{"a":"SpiceJet","f":"SG475","d":"15:00","r":"16:30","s":0,"p":8706},{"a":"IndiGo","f":"6E963","d":"20:15","r":"21:50","s":0,"p":9030},{"a":"IndiGo","f":"6E2495","d":"14:40","r":"16:20","s":0,"p":10079},{"a":"Air India Express","f":"IX1620","d":"14:10","r":"15:50","s":0,"p":10412},{"a":"Air India Express","f":"IX1196","d":"16:00","r":"17:40","s":0,"p":10412},{"a":"IndiGo","f":"6E6249","d":"08:50","r":"10:30","s":0,"p":10500},{"a":"IndiGo","f":"6E527","d":"10:45","r":"12:20","s":0,"p":10500},{"a":"IndiGo","f":"6E5010","d":"18:50","r":"20:25","s":0,"p":10500},{"a":"Air India Express","f":"IX1389","d":"18:55","r":"20:25","s":0,"p":10906},{"a":"Air India Express","f":"IX1017","d":"11:00","r":"12:40","s":0,"p":11304},{"a":"Akasa Air","f":"QP1803","d":"14:35","r":"16:15","s":0,"p":11365},{"a":"Air India Express","f":"IX1037","d":"09:40","r":"11:10","s":0,"p":12301},{"a":"Air India","f":"AI2540","d":"08:40","r":"10:30","s":0,"p":13098},{"a":"Air India","f":"AI1811","d":"09:55","r":"11:40","s":0,"p":13098},{"a":"Air India","f":"AI1818","d":"16:55","r":"18:35","s":0,"p":13298},{"a":"IndiGo","f":"6E2281","d":"15:50","r":"17:15","s":0,"p":13544},{"a":"Air India Express","f":"IX1622","d":"16:45","r":"18:40","s":0,"p":14000}],"2027-01-13":[{"a":"IndiGo","f":"6E229 / 6E5163","d":"14:45","r":"18:05","s":1,"p":6829},{"a":"IndiGo","f":"6E2148 / 6E2185","d":"17:35","r":"21:05","s":1,"p":6829},{"a":"IndiGo","f":"6E6112 / 6E2042","d":"17:55","r":"22:55","s":1,"p":6829},{"a":"IndiGo","f":"6E2495","d":"14:40","r":"16:20","s":0,"p":7324},{"a":"IndiGo","f":"6E963","d":"20:15","r":"21:50","s":0,"p":7324},{"a":"Akasa Air","f":"QP1803","d":"14:35","r":"16:15","s":0,"p":8560},{"a":"Air India Express","f":"IX1073","d":"13:05","r":"14:45","s":0,"p":8609},{"a":"Air India Express","f":"IX1620","d":"14:10","r":"15:50","s":0,"p":8609},{"a":"Air India Express","f":"IX1196","d":"16:00","r":"17:40","s":0,"p":8609},{"a":"SpiceJet","f":"SG181","d":"13:55","r":"15:25","s":0,"p":8706},{"a":"SpiceJet","f":"SG475","d":"15:00","r":"16:30","s":0,"p":8706},{"a":"IndiGo","f":"6E6249","d":"08:50","r":"10:30","s":0,"p":9030},{"a":"IndiGo","f":"6E527","d":"10:45","r":"12:20","s":0,"p":9030},{"a":"IndiGo","f":"6E5010","d":"18:50","r":"20:25","s":0,"p":9030},{"a":"Air India Express","f":"IX1017","d":"11:00","r":"12:40","s":0,"p":9112},{"a":"Air India Express","f":"IX1389","d":"18:55","r":"20:25","s":0,"p":9112},{"a":"Air India Express","f":"IX1037","d":"09:40","r":"11:10","s":0,"p":10412},{"a":"IndiGo","f":"6E2281","d":"15:50","r":"17:15","s":0,"p":11444},{"a":"Air India Express","f":"IX1622","d":"16:45","r":"18:40","s":0,"p":11703},{"a":"Air India","f":"AI1811","d":"09:55","r":"11:40","s":0,"p":12206},{"a":"Air India","f":"AI1818","d":"16:55","r":"18:35","s":0,"p":12406}],"2027-01-14":[{"a":"IndiGo","f":"6E229 / 6E5163","d":"14:45","r":"18:05","s":1,"p":6829},{"a":"IndiGo","f":"6E2148 / 6E2185","d":"17:35","r":"21:05","s":1,"p":6829},{"a":"IndiGo","f":"6E6112 / 6E2042","d":"17:55","r":"22:55","s":1,"p":6829},{"a":"SpiceJet","f":"SG161 / SG161","d":"16:05","r":"19:00","s":1,"p":6916},{"a":"IndiGo","f":"6E6496 / 6E6152","d":"15:40","r":"19:45","s":1,"p":7170},{"a":"IndiGo","f":"6E527","d":"10:45","r":"12:20","s":0,"p":7324},{"a":"IndiGo","f":"6E963","d":"20:15","r":"21:50","s":0,"p":7324},{"a":"Air India Express","f":"IX1037","d":"09:40","r":"11:10","s":0,"p":8609},{"a":"Air India Express","f":"IX1017","d":"11:00","r":"12:40","s":0,"p":8609},{"a":"SpiceJet","f":"SG181","d":"13:55","r":"15:25","s":0,"p":8706},{"a":"SpiceJet","f":"SG475","d":"15:00","r":"16:30","s":0,"p":8706},{"a":"IndiGo","f":"6E5010","d":"18:50","r":"20:25","s":0,"p":9030},{"a":"IndiGo","f":"6E6249","d":"08:50","r":"10:30","s":0,"p":9449},{"a":"Air India Express","f":"IX1389","d":"18:55","r":"20:25","s":0,"p":9710},{"a":"IndiGo","f":"6E2495","d":"14:40","r":"16:20","s":0,"p":10919},{"a":"IndiGo","f":"6E2281","d":"15:50","r":"17:15","s":0,"p":12074},{"a":"Air India","f":"AI1811","d":"09:55","r":"11:40","s":0,"p":12206},{"a":"Air India Express","f":"IX1620","d":"14:10","r":"15:50","s":0,"p":12301},{"a":"Air India Express","f":"IX1196","d":"16:00","r":"17:40","s":0,"p":12301},{"a":"Air India Express","f":"IX1622","d":"16:45","r":"18:40","s":0,"p":12301},{"a":"Air India","f":"AI1818","d":"16:55","r":"18:35","s":0,"p":12406},{"a":"Akasa Air","f":"QP1803","d":"14:35","r":"16:15","s":0,"p":13459}],"2027-01-15":[{"a":"IndiGo","f":"6E229 / 6E5163","d":"14:45","r":"18:05","s":1,"p":6829},{"a":"IndiGo","f":"6E2148 / 6E2185","d":"17:35","r":"21:05","s":1,"p":6829},{"a":"IndiGo","f":"6E6112 / 6E2042","d":"17:55","r":"22:55","s":1,"p":6829},{"a":"SpiceJet","f":"SG161 / SG161","d":"16:05","r":"19:00","s":1,"p":6916},{"a":"IndiGo","f":"6E6496 / 6E6152","d":"15:40","r":"19:45","s":1,"p":7170},{"a":"SpiceJet","f":"SG181","d":"13:55","r":"15:25","s":0,"p":8706},{"a":"SpiceJet","f":"SG475","d":"15:00","r":"16:30","s":0,"p":8706},{"a":"IndiGo","f":"6E2495","d":"14:40","r":"16:20","s":0,"p":9030},{"a":"Air India Express","f":"IX1620","d":"14:10","r":"15:50","s":0,"p":9112},{"a":"Air India Express","f":"IX1196","d":"16:00","r":"17:40","s":0,"p":9112},{"a":"Akasa Air","f":"QP1803","d":"14:35","r":"16:15","s":0,"p":9673},{"a":"IndiGo","f":"6E527","d":"10:45","r":"12:20","s":0,"p":10079},{"a":"IndiGo","f":"6E6249","d":"08:50","r":"10:30","s":0,"p":10500},{"a":"IndiGo","f":"6E963","d":"20:15","r":"21:50","s":0,"p":10500},{"a":"IndiGo","f":"6E5010","d":"18:50","r":"20:25","s":0,"p":10919},{"a":"Air India Express","f":"IX1017","d":"11:00","r":"12:40","s":0,"p":11304},{"a":"Air India Express","f":"IX1389","d":"18:55","r":"20:25","s":0,"p":11304},{"a":"Air India Express","f":"IX1037","d":"09:40","r":"11:10","s":0,"p":11703},{"a":"Air India","f":"AI1811","d":"09:55","r":"11:40","s":0,"p":12206},{"a":"Air India","f":"AI2540","d":"08:40","r":"10:30","s":0,"p":13098},{"a":"Air India","f":"AI1818","d":"16:55","r":"18:35","s":0,"p":13298},{"a":"IndiGo","f":"6E2281","d":"15:50","r":"17:15","s":0,"p":13544},{"a":"Air India Express","f":"IX1622","d":"16:45","r":"18:40","s":0,"p":14000}],"2027-01-16":[{"a":"IndiGo","f":"6E229 / 6E5163","d":"14:45","r":"18:05","s":1,"p":6829},{"a":"IndiGo","f":"6E2148 / 6E2185","d":"17:35","r":"21:05","s":1,"p":6829},{"a":"SpiceJet","f":"SG161 / SG161","d":"16:05","r":"19:00","s":1,"p":6916},{"a":"IndiGo","f":"6E6496 / 6E6152","d":"15:40","r":"19:45","s":1,"p":7170},{"a":"SpiceJet","f":"SG181","d":"13:55","r":"15:25","s":0,"p":8706},{"a":"SpiceJet","f":"SG475","d":"15:00","r":"16:30","s":0,"p":8706},{"a":"IndiGo","f":"6E527","d":"10:45","r":"12:20","s":0,"p":9030},{"a":"Air India Express","f":"IX1017","d":"11:00","r":"12:40","s":0,"p":9710},{"a":"Air India Express","f":"IX1037","d":"09:40","r":"11:10","s":0,"p":10412},{"a":"IndiGo","f":"6E6249","d":"08:50","r":"10:30","s":0,"p":10500},{"a":"IndiGo","f":"6E5010","d":"18:50","r":"20:25","s":0,"p":10500},{"a":"IndiGo","f":"6E963","d":"20:15","r":"21:50","s":0,"p":10500},{"a":"Air India Express","f":"IX1389","d":"18:55","r":"20:25","s":0,"p":12301},{"a":"IndiGo","f":"6E2495","d":"14:40","r":"16:20","s":0,"p":12389},{"a":"Air India","f":"AI1811","d":"09:55","r":"11:40","s":0,"p":13098},{"a":"Air India","f":"AI1818","d":"16:55","r":"18:35","s":0,"p":13298},{"a":"IndiGo","f":"6E2281","d":"15:50","r":"17:15","s":0,"p":13544},{"a":"Akasa Air","f":"QP1803","d":"14:35","r":"16:15","s":0,"p":13934},{"a":"Air India Express","f":"IX1620","d":"14:10","r":"15:50","s":0,"p":14000},{"a":"Air India Express","f":"IX1196","d":"16:00","r":"17:40","s":0,"p":14000},{"a":"Air India Express","f":"IX1622","d":"16:45","r":"18:40","s":0,"p":16287}],"2027-01-17":[{"a":"IndiGo","f":"6E6112 / 6E2042","d":"17:55","r":"22:55","s":1,"p":6829},{"a":"SpiceJet","f":"SG161 / SG161","d":"16:05","r":"19:00","s":1,"p":6916},{"a":"SpiceJet","f":"SG475","d":"15:00","r":"16:30","s":0,"p":8706},{"a":"IndiGo","f":"6E5010","d":"18:50","r":"20:25","s":0,"p":10079},{"a":"IndiGo","f":"6E963","d":"20:15","r":"21:50","s":0,"p":10919},{"a":"Air India Express","f":"IX1389","d":"18:55","r":"20:25","s":0,"p":11304},{"a":"IndiGo","f":"6E6249","d":"08:50","r":"10:30","s":0,"p":13544},{"a":"Air India Express","f":"IX1037","d":"09:40","r":"11:10","s":0,"p":16287},{"a":"Air India Express","f":"IX1017","d":"11:00","r":"12:40","s":0,"p":16287},{"a":"IndiGo","f":"6E527","d":"10:45","r":"12:20","s":0,"p":17744},{"a":"Air India","f":"AI1811","d":"09:55","r":"11:40","s":0,"p":20672}],"2027-01-18":[{"a":"IndiGo","f":"6E229 / 6E5163","d":"14:45","r":"18:05","s":1,"p":6829},{"a":"IndiGo","f":"6E2148 / 6E2185","d":"17:35","r":"21:05","s":1,"p":6829},{"a":"IndiGo","f":"6E6112 / 6E2042","d":"17:55","r":"22:55","s":1,"p":6829},{"a":"SpiceJet","f":"SG161 / SG161","d":"16:05","r":"19:00","s":1,"p":6916},{"a":"IndiGo","f":"6E6496 / 6E6152","d":"15:40","r":"19:45","s":1,"p":7170},{"a":"SpiceJet","f":"SG181","d":"13:55","r":"15:25","s":0,"p":8706},{"a":"SpiceJet","f":"SG475","d":"15:00","r":"16:30","s":0,"p":8706},{"a":"IndiGo","f":"6E963","d":"20:15","r":"21:50","s":0,"p":10079},{"a":"IndiGo","f":"6E6249","d":"08:50","r":"10:30","s":0,"p":10919},{"a":"IndiGo","f":"6E527","d":"10:45","r":"12:20","s":0,"p":10919},{"a":"IndiGo","f":"6E5010","d":"18:50","r":"20:25","s":0,"p":11340},{"a":"Air India Express","f":"IX1017","d":"11:00","r":"12:40","s":0,"p":12301},{"a":"IndiGo","f":"6E2495","d":"14:40","r":"16:20","s":0,"p":12389},{"a":"Air India","f":"AI1811","d":"09:55","r":"11:40","s":0,"p":13098},{"a":"Air India","f":"AI1818","d":"16:55","r":"18:35","s":0,"p":13298},{"a":"Akasa Air","f":"QP1803","d":"14:35","r":"16:15","s":0,"p":13459},{"a":"Air India Express","f":"IX1037","d":"09:40","r":"11:10","s":0,"p":14000},{"a":"Air India Express","f":"IX1620","d":"14:10","r":"15:50","s":0,"p":14000},{"a":"Air India Express","f":"IX1622","d":"16:45","r":"18:40","s":0,"p":14000},{"a":"Air India Express","f":"IX1389","d":"18:55","r":"20:25","s":0,"p":14000},{"a":"IndiGo","f":"6E2281","d":"15:50","r":"17:15","s":0,"p":14174},{"a":"Air India Express","f":"IX1196","d":"16:00","r":"17:40","s":0,"p":16287}],"2027-01-19":[{"a":"IndiGo","f":"6E229 / 6E5163","d":"14:45","r":"18:05","s":1,"p":6829},{"a":"IndiGo","f":"6E2148 / 6E2185","d":"17:35","r":"21:05","s":1,"p":6829},{"a":"IndiGo","f":"6E6112 / 6E2042","d":"17:55","r":"22:55","s":1,"p":6829},{"a":"SpiceJet","f":"SG161 / SG161","d":"16:05","r":"19:00","s":1,"p":6916},{"a":"IndiGo","f":"6E6496 / 6E6152","d":"15:40","r":"19:45","s":1,"p":7170},{"a":"SpiceJet","f":"SG181","d":"13:55","r":"15:25","s":0,"p":8706},{"a":"SpiceJet","f":"SG475","d":"15:00","r":"16:30","s":0,"p":8706},{"a":"IndiGo","f":"6E527","d":"10:45","r":"12:20","s":0,"p":9030},{"a":"Air India Express","f":"IX1017","d":"11:00","r":"12:40","s":0,"p":9710},{"a":"Air India Express","f":"IX1037","d":"09:40","r":"11:10","s":0,"p":10412},{"a":"IndiGo","f":"6E6249","d":"08:50","r":"10:30","s":0,"p":10500},{"a":"IndiGo","f":"6E2281","d":"15:50","r":"17:15","s":0,"p":10500},{"a":"IndiGo","f":"6E5010","d":"18:50","r":"20:25","s":0,"p":10500},{"a":"IndiGo","f":"6E963","d":"20:15","r":"21:50","s":0,"p":10500},{"a":"Air India Express","f":"IX1196","d":"16:00","r":"17:40","s":0,"p":10906},{"a":"Air India Express","f":"IX1389","d":"18:55","r":"20:25","s":0,"p":10906},{"a":"Air India Express","f":"IX1620","d":"14:10","r":"15:50","s":0,"p":11304},{"a":"Air India Express","f":"IX1622","d":"16:45","r":"18:40","s":0,"p":11304},{"a":"Akasa Air","f":"QP1803","d":"14:35","r":"16:15","s":0,"p":11365},{"a":"Air India","f":"AI2540","d":"08:40","r":"10:30","s":0,"p":13098},{"a":"Air India","f":"AI1818","d":"16:55","r":"18:35","s":0,"p":13298},{"a":"IndiGo","f":"6E2495","d":"14:40","r":"16:20","s":0,"p":14174}],"2027-01-21":[{"a":"IndiGo","f":"6E229 / 6E5163","d":"14:45","r":"18:05","s":1,"p":6829},{"a":"IndiGo","f":"6E2148 / 6E2185","d":"17:35","r":"21:05","s":1,"p":6829},{"a":"IndiGo","f":"6E6112 / 6E2042","d":"17:55","r":"22:55","s":1,"p":6829},{"a":"SpiceJet","f":"SG161 / SG161","d":"16:05","r":"19:00","s":1,"p":6916},{"a":"IndiGo","f":"6E6496 / 6E6152","d":"15:40","r":"19:45","s":1,"p":7170},{"a":"SpiceJet","f":"SG181","d":"13:55","r":"15:25","s":0,"p":8706},{"a":"SpiceJet","f":"SG475","d":"15:00","r":"16:30","s":0,"p":8706},{"a":"IndiGo","f":"6E527","d":"10:45","r":"12:20","s":0,"p":9030},{"a":"IndiGo","f":"6E5010","d":"18:50","r":"20:25","s":0,"p":9030},{"a":"Air India Express","f":"IX1017","d":"11:00","r":"12:40","s":0,"p":9710},{"a":"Air India Express","f":"IX1389","d":"18:55","r":"20:25","s":0,"p":9710},{"a":"Air India Express","f":"IX1037","d":"09:40","r":"11:10","s":0,"p":10412},{"a":"IndiGo","f":"6E6249","d":"08:50","r":"10:30","s":0,"p":10500},{"a":"IndiGo","f":"6E963","d":"20:15","r":"21:50","s":0,"p":10500},{"a":"Akasa Air","f":"QP1803","d":"14:35","r":"16:15","s":0,"p":12147},{"a":"Air India Express","f":"IX1196","d":"16:00","r":"17:40","s":0,"p":12301},{"a":"IndiGo","f":"6E2495","d":"14:40","r":"16:20","s":0,"p":12389},{"a":"Air India","f":"AI1818","d":"16:55","r":"18:35","s":0,"p":12406},{"a":"Air India Express","f":"IX1620","d":"14:10","r":"15:50","s":0,"p":14000},{"a":"Air India Express","f":"IX1622","d":"16:45","r":"18:40","s":0,"p":14000},{"a":"IndiGo","f":"6E2281","d":"15:50","r":"17:15","s":0,"p":15749}],"2027-01-22":[{"a":"IndiGo","f":"6E229 / 6E5163","d":"14:45","r":"18:05","s":1,"p":6829},{"a":"IndiGo","f":"6E2148 / 6E2185","d":"17:35","r":"21:05","s":1,"p":6829},{"a":"IndiGo","f":"6E6112 / 6E2042","d":"17:55","r":"22:55","s":1,"p":6829},{"a":"SpiceJet","f":"SG161 / SG161","d":"16:05","r":"19:00","s":1,"p":6916},{"a":"IndiGo","f":"6E6496 / 6E6152","d":"15:40","r":"19:45","s":1,"p":7170},{"a":"SpiceJet","f":"SG181","d":"13:55","r":"15:25","s":0,"p":8706},{"a":"SpiceJet","f":"SG475","d":"15:00","r":"16:30","s":0,"p":8706},{"a":"IndiGo","f":"6E527","d":"10:45","r":"12:20","s":0,"p":9030},{"a":"IndiGo","f":"6E2495","d":"14:40","r":"16:20","s":0,"p":9030},{"a":"IndiGo","f":"6E5010","d":"18:50","r":"20:25","s":0,"p":9030},{"a":"Air India Express","f":"IX1196","d":"16:00","r":"17:40","s":0,"p":9112},{"a":"Akasa Air","f":"QP1803","d":"14:35","r":"16:15","s":0,"p":9673},{"a":"Air India Express","f":"IX1620","d":"14:10","r":"15:50","s":0,"p":9710},{"a":"Air India Express","f":"IX1389","d":"18:55","r":"20:25","s":0,"p":9710},{"a":"Air India Express","f":"IX1037","d":"09:40","r":"11:10","s":0,"p":10014},{"a":"Air India Express","f":"IX1017","d":"11:00","r":"12:40","s":0,"p":10014},{"a":"IndiGo","f":"6E6249","d":"08:50","r":"10:30","s":0,"p":10500},{"a":"IndiGo","f":"6E2281","d":"15:50","r":"17:15","s":0,"p":10500},{"a":"IndiGo","f":"6E963","d":"20:15","r":"21:50","s":0,"p":10500},{"a":"Air India Express","f":"IX1622","d":"16:45","r":"18:40","s":0,"p":10906},{"a":"Air India","f":"AI1818","d":"16:55","r":"18:35","s":0,"p":12406},{"a":"Air India","f":"AI2540","d":"08:40","r":"10:30","s":0,"p":14294}],"2027-01-23":[{"a":"IndiGo","f":"6E229 / 6E5163","d":"14:45","r":"18:05","s":1,"p":6829},{"a":"IndiGo","f":"6E2148 / 6E2185","d":"17:35","r":"21:05","s":1,"p":6829},{"a":"SpiceJet","f":"SG161 / SG161","d":"16:05","r":"19:00","s":1,"p":6916},{"a":"IndiGo","f":"6E6496 / 6E6152","d":"15:40","r":"19:45","s":1,"p":7170},{"a":"SpiceJet","f":"SG181","d":"13:55","r":"15:25","s":0,"p":8706},{"a":"SpiceJet","f":"SG475","d":"15:00","r":"16:30","s":0,"p":8706},{"a":"IndiGo","f":"6E5010","d":"18:50","r":"20:25","s":0,"p":9030},{"a":"Air India Express","f":"IX1389","d":"18:55","r":"20:25","s":0,"p":10014},{"a":"IndiGo","f":"6E527","d":"10:45","r":"12:20","s":0,"p":10079},{"a":"IndiGo","f":"6E6249","d":"08:50","r":"10:30","s":0,"p":10500},{"a":"IndiGo","f":"6E963","d":"20:15","r":"21:50","s":0,"p":10500},{"a":"Air India Express","f":"IX1037","d":"09:40","r":"11:10","s":0,"p":10906},{"a":"IndiGo","f":"6E2495","d":"14:40","r":"16:20","s":0,"p":10919},{"a":"Air India Express","f":"IX1017","d":"11:00","r":"12:40","s":0,"p":11304},{"a":"Akasa Air","f":"QP1803","d":"14:35","r":"16:15","s":0,"p":12147},{"a":"Air India Express","f":"IX1620","d":"14:10","r":"15:50","s":0,"p":12301},{"a":"Air India Express","f":"IX1196","d":"16:00","r":"17:40","s":0,"p":12301},{"a":"Air India","f":"AI1818","d":"16:55","r":"18:35","s":0,"p":12406},{"a":"IndiGo","f":"6E2281","d":"15:50","r":"17:15","s":0,"p":13544},{"a":"Air India Express","f":"IX1622","d":"16:45","r":"18:40","s":0,"p":14000}],"2027-01-24":[{"a":"IndiGo","f":"6E6112 / 6E2042","d":"17:55","r":"22:55","s":1,"p":6829},{"a":"SpiceJet","f":"SG161 / SG161","d":"16:05","r":"19:00","s":1,"p":6916},{"a":"SpiceJet","f":"SG475","d":"15:00","r":"16:30","s":0,"p":8706},{"a":"IndiGo","f":"6E963","d":"20:15","r":"21:50","s":0,"p":10500},{"a":"IndiGo","f":"6E6249","d":"08:50","r":"10:30","s":0,"p":10919},{"a":"IndiGo","f":"6E5010","d":"18:50","r":"20:25","s":0,"p":10919},{"a":"Air India Express","f":"IX1037","d":"09:40","r":"11:10","s":0,"p":12301},{"a":"Air India Express","f":"IX1017","d":"11:00","r":"12:40","s":0,"p":12301},{"a":"Air India Express","f":"IX1389","d":"18:55","r":"20:25","s":0,"p":12301},{"a":"IndiGo","f":"6E527","d":"10:45","r":"12:20","s":0,"p":14174}]}},"hist":{"DEL-SXR":{"2027-01-03":[["2026-09-03",8394],["2026-09-04",8394],["2026-09-05",9484],["2026-09-06",9484],["2026-09-07",9484],["2026-09-08",9484],["2026-09-09",9484],["2026-09-10",9484],["2026-09-11",9484],["2026-09-12",9484],["2026-09-13",9484],["2026-09-14",9484],["2026-09-15",6542],["2026-09-16",6542],["2026-09-17",6542],["2026-09-18",6542],["2026-09-19",6542],["2026-09-20",6542],["2026-09-21",6542],["2026-09-22",6542],["2026-09-23",6542],["2026-09-24",6542],["2026-09-25",6542],["2026-09-26",6542],["2026-09-27",6542],["2026-09-28",6542],["2026-09-29",6542],["2026-09-30",6542],["2026-10-01",6542],["2026-10-02",6542],["2026-10-03",6542],["2026-10-04",6542],["2026-10-05",6542],["2026-10-06",6542],["2026-10-07",6512],["2026-10-08",6306],["2026-10-09",6306],["2026-10-10",6306],["2026-10-11",6759],["2026-10-12",6759],["2026-10-13",6759],["2026-10-14",6759],["2026-10-15",6759],["2026-10-16",6759],["2026-10-17",6759],["2026-10-18",6759],["2026-10-19",6759],["2026-10-20",6759],["2026-10-21",6759],["2026-10-22",6759],["2026-10-23",7375],["2026-10-24",6147],["2026-10-25",6147],["2026-10-26",6147],["2026-10-27",6147],["2026-10-28",6147],["2026-10-29",6147],["2026-10-30",6147],["2026-10-31",6147],["2026-11-01",6147],["2026-11-02",7375]],"2027-01-04":[["2026-09-03",8394],["2026-09-04",8394],["2026-09-05",9208],["2026-09-06",9484],["2026-09-07",8862],["2026-09-08",8862],["2026-09-09",8862],["2026-09-10",8862],["2026-09-11",8862],["2026-09-12",8862],["2026-09-13",8862],["2026-09-14",8862],["2026-09-15",6542],["2026-09-16",6542],["2026-09-17",6542],["2026-09-18",6542],["2026-09-19",6542],["2026-09-20",6542],["2026-09-21",6542],["2026-09-22",6542],["2026-09-23",6542],["2026-09-24",6542],["2026-09-25",6542],["2026-09-26",6542],["2026-09-27",6542],["2026-09-28",6542],["2026-09-29",6542],["2026-09-30",6542],["2026-10-01",6542],["2026-10-02",6542],["2026-10-03",6542],["2026-10-04",6542],["2026-10-05",6542],["2026-10-06",6542],["2026-10-07",6512],["2026-10-08",6306],["2026-10-09",6306],["2026-10-10",6306],["2026-10-11",6306],["2026-10-12",6306],["2026-10-13",6306],["2026-10-14",6306],["2026-10-15",6306],["2026-10-16",6306],["2026-10-17",6306],["2026-10-18",6306],["2026-10-19",6306],["2026-10-20",6306],["2026-10-21",6306],["2026-10-22",6306],["2026-10-23",6306],["2026-10-24",6147],["2026-10-25",6147],["2026-10-26",6147],["2026-10-27",6147],["2026-10-28",6147],["2026-10-29",6147],["2026-10-30",6147],["2026-10-31",6147],["2026-11-01",6147],["2026-11-02",6512]],"2027-01-05":[["2026-09-03",8394],["2026-09-04",8394],["2026-09-05",8594],["2026-09-06",8594],["2026-09-07",8594],["2026-09-08",8594],["2026-09-09",8594],["2026-09-10",8594],["2026-09-11",8594],["2026-09-12",8594],["2026-09-13",8594],["2026-09-14",8594],["2026-09-15",6542],["2026-09-16",6542],["2026-09-17",6542],["2026-09-18",6542],["2026-09-19",6542],["2026-09-20",6542],["2026-09-21",6542],["2026-09-22",6542],["2026-09-23",6542],["2026-09-24",6542],["2026-09-25",6542],["2026-09-26",6542],["2026-09-27",6542],["2026-09-28",6542],["2026-09-29",6542],["2026-09-30",6748],["2026-10-01",6748],["2026-10-02",6748],["2026-10-03",6542],["2026-10-04",6542],["2026-10-05",6542],["2026-10-06",6542],["2026-10-07",6512],["2026-10-08",6306],["2026-10-09",6306],["2026-10-10",6306],["2026-10-11",6306],["2026-10-12",6306],["2026-10-13",6306],["2026-10-14",6306],["2026-10-15",6306],["2026-10-16",6306],["2026-10-17",6306],["2026-10-18",6306],["2026-10-19",6306],["2026-10-20",6306],["2026-10-21",6306],["2026-10-22",6306],["2026-10-23",6306],["2026-10-24",6147],["2026-10-25",6147],["2026-10-26",6147],["2026-10-27",6147],["2026-10-28",6147],["2026-10-29",6147],["2026-10-30",6147],["2026-10-31",6147],["2026-11-01",6147],["2026-11-02",6306]],"2027-01-06":[["2026-09-03",8594],["2026-09-04",8594],["2026-09-05",8594],["2026-09-06",8594],["2026-09-07",8594],["2026-09-08",8594],["2026-09-09",8594],["2026-09-10",8594],["2026-09-11",8594],["2026-09-12",8594],["2026-09-13",8594],["2026-09-14",8594],["2026-09-15",8594],["2026-09-16",8594],["2026-09-17",8594],["2026-09-18",8594],["2026-09-19",8594],["2026-09-20",8594],["2026-09-21",8594],["2026-09-22",8594],["2026-09-23",8594],["2026-09-24",8692],["2026-09-25",8692],["2026-09-26",8692],["2026-09-27",8692],["2026-09-28",8583],["2026-09-29",8583],["2026-09-30",8583],["2026-10-01",8583],["2026-10-02",8583],["2026-10-03",8151],["2026-10-04",8151],["2026-10-05",8151],["2026-10-06",8583],["2026-10-07",8825],["2026-10-08",8347],["2026-10-09",7915],["2026-10-10",7915],["2026-10-11",7915],["2026-10-12",7915],["2026-10-13",8347],["2026-10-14",8347],["2026-10-15",8347],["2026-10-16",8347],["2026-10-17",8347],["2026-10-18",8347],["2026-10-19",7915],["2026-10-20",7915],["2026-10-21",7915],["2026-10-22",7552],["2026-10-23",7552],["2026-10-24",6147],["2026-10-25",6147],["2026-10-26",6147],["2026-10-27",6147],["2026-10-28",6147],["2026-10-29",6147],["2026-10-30",6147],["2026-10-31",6147],["2026-11-01",6147],["2026-11-02",6889]],"2027-01-07":[["2026-09-03",8394],["2026-09-04",8394],["2026-09-05",8594],["2026-09-06",8594],["2026-09-07",8594],["2026-09-08",8594],["2026-09-09",8594],["2026-09-10",8594],["2026-09-11",8594],["2026-09-12",8594],["2026-09-13",8594],["2026-09-14",8594],["2026-09-15",6542],["2026-09-16",6542],["2026-09-17",6542],["2026-09-18",6542],["2026-09-19",6542],["2026-09-20",6542],["2026-09-21",6542],["2026-09-22",6542],["2026-09-23",6542],["2026-09-24",6542],["2026-09-25",6542],["2026-09-26",6542],["2026-09-27",6542],["2026-09-28",6542],["2026-09-29",6542],["2026-09-30",6542],["2026-10-01",6542],["2026-10-02",6542],["2026-10-03",6542],["2026-10-04",6542],["2026-10-05",6542],["2026-10-06",6542],["2026-10-07",6512],["2026-10-08",6306],["2026-10-09",6306],["2026-10-10",6306],["2026-10-11",6306],["2026-10-12",6306],["2026-10-13",6306],["2026-10-14",6306],["2026-10-15",6306],["2026-10-16",6306],["2026-10-17",6306],["2026-10-18",6306],["2026-10-19",6306],["2026-10-20",6306],["2026-10-21",6306],["2026-10-22",6306],["2026-10-23",6306],["2026-10-24",6147],["2026-10-25",6147],["2026-10-26",6147],["2026-10-27",6147],["2026-10-28",6147],["2026-10-29",6147],["2026-10-30",6147],["2026-10-31",6147],["2026-11-01",6147],["2026-11-02",6512]],"2027-01-08":[["2026-09-03",8394],["2026-09-04",8394],["2026-09-05",8594],["2026-09-06",8594],["2026-09-07",8594],["2026-09-08",8594],["2026-09-09",8594],["2026-09-10",8594],["2026-09-11",8594],["2026-09-12",8594],["2026-09-13",8594],["2026-09-14",8594],["2026-09-15",6542],["2026-09-16",6542],["2026-09-17",6542],["2026-09-18",6542],["2026-09-19",6542],["2026-09-20",6542],["2026-09-21",6542],["2026-09-22",6542],["2026-09-23",6542],["2026-09-24",6542],["2026-09-25",6542],["2026-09-26",6542],["2026-09-27",6542],["2026-09-28",6542],["2026-09-29",6542],["2026-09-30",6542],["2026-10-01",6542],["2026-10-02",6542],["2026-10-03",6542],["2026-10-04",6542],["2026-10-05",6542],["2026-10-06",6542],["2026-10-07",6512],["2026-10-08",6306],["2026-10-09",6306],["2026-10-10",6306],["2026-10-11",6306],["2026-10-12",6306],["2026-10-13",6306],["2026-10-14",6306],["2026-10-15",6306],["2026-10-16",6306],["2026-10-17",6306],["2026-10-18",6306],["2026-10-19",6306],["2026-10-20",6306],["2026-10-21",6306],["2026-10-22",6306],["2026-10-23",6306],["2026-10-24",6147],["2026-10-25",6147],["2026-10-26",6147],["2026-10-27",6147],["2026-10-28",6147],["2026-10-29",6147],["2026-10-30",6147],["2026-10-31",6147],["2026-11-01",6147],["2026-11-02",6306]],"2027-01-09":[["2026-09-03",8394],["2026-09-04",8394],["2026-09-05",9484],["2026-09-06",9484],["2026-09-07",8862],["2026-09-08",8862],["2026-09-09",8862],["2026-09-10",8862],["2026-09-11",8862],["2026-09-12",8862],["2026-09-13",8862],["2026-09-14",8862],["2026-09-15",6542],["2026-09-16",6542],["2026-09-17",6542],["2026-09-18",6542],["2026-09-19",6542],["2026-09-20",6542],["2026-09-21",6542],["2026-09-22",6542],["2026-09-23",6542],["2026-09-24",6542],["2026-09-25",6542],["2026-09-26",6542],["2026-09-27",6542],["2026-09-28",6542],["2026-09-29",6542],["2026-09-30",6542],["2026-10-01",6542],["2026-10-02",6542],["2026-10-03",6542],["2026-10-04",6542],["2026-10-05",6542],["2026-10-06",6542],["2026-10-07",6512],["2026-10-08",6306],["2026-10-09",6306],["2026-10-10",6306],["2026-10-11",6306],["2026-10-12",6306],["2026-10-13",6306],["2026-10-14",6306],["2026-10-15",6306],["2026-10-16",6306],["2026-10-17",6306],["2026-10-18",6306],["2026-10-19",6306],["2026-10-20",6306],["2026-10-21",6306],["2026-10-22",6306],["2026-10-23",6306],["2026-10-24",6306],["2026-10-25",6306],["2026-10-26",6306],["2026-10-27",6147],["2026-10-28",6147],["2026-10-29",6147],["2026-10-30",6147],["2026-10-31",6147],["2026-11-01",6147],["2026-11-02",6512]],"2027-01-10":[["2026-09-03",8394],["2026-09-04",8394],["2026-09-05",8594],["2026-09-06",8594],["2026-09-07",8594],["2026-09-08",8594],["2026-09-09",8594],["2026-09-10",8594],["2026-09-11",8594],["2026-09-12",8594],["2026-09-13",8594],["2026-09-14",8594],["2026-09-15",6542],["2026-09-16",6542],["2026-09-17",6542],["2026-09-18",6542],["2026-09-19",6542],["2026-09-20",6542],["2026-09-21",6542],["2026-09-22",6542],["2026-09-23",6542],["2026-09-24",6542],["2026-09-25",6542],["2026-09-26",6542],["2026-09-27",6542],["2026-09-28",6542],["2026-09-29",6542],["2026-09-30",6542],["2026-10-01",6542],["2026-10-02",6542],["2026-10-03",6542],["2026-10-04",6542],["2026-10-05",6542],["2026-10-06",6542],["2026-10-07",6512],["2026-10-08",6306],["2026-10-09",6306],["2026-10-10",6306],["2026-10-11",6306],["2026-10-12",6306],["2026-10-13",6306],["2026-10-14",6306],["2026-10-15",6306],["2026-10-16",6306],["2026-10-17",6306],["2026-10-18",6306],["2026-10-19",6512],["2026-10-20",6512],["2026-10-21",6759],["2026-10-22",6306],["2026-10-23",6306],["2026-10-24",6147],["2026-10-25",6147],["2026-10-26",6147],["2026-10-27",6147],["2026-10-28",6147],["2026-10-29",6147],["2026-10-30",6147],["2026-10-31",6147],["2026-11-01",6581],["2026-11-02",7047]],"2027-01-11":[["2026-09-03",8394],["2026-09-04",8394],["2026-09-05",8594],["2026-09-06",8594],["2026-09-07",8594],["2026-09-08",8594],["2026-09-09",8594],["2026-09-10",8594],["2026-09-11",8594],["2026-09-12",8594],["2026-09-13",8594],["2026-09-14",8594],["2026-09-15",6542],["2026-09-16",6542],["2026-09-17",6542],["2026-09-18",6542],["2026-09-19",6542],["2026-09-20",6542],["2026-09-21",6542],["2026-09-22",6542],["2026-09-23",6542],["2026-09-24",6542],["2026-09-25",6542],["2026-09-26",6542],["2026-09-27",6542],["2026-09-28",6542],["2026-09-29",6542],["2026-09-30",6542],["2026-10-01",6542],["2026-10-02",6542],["2026-10-03",6542],["2026-10-04",6542],["2026-10-05",6542],["2026-10-06",6542],["2026-10-07",6512],["2026-10-08",6306],["2026-10-09",6306],["2026-10-10",6306],["2026-10-11",6306],["2026-10-12",6306],["2026-10-13",6306],["2026-10-14",6306],["2026-10-15",6306],["2026-10-16",6306],["2026-10-17",6306],["2026-10-18",6306],["2026-10-19",6306],["2026-10-20",6306],["2026-10-21",6306],["2026-10-22",6306],["2026-10-23",6306],["2026-10-24",6147],["2026-10-25",6147],["2026-10-26",6147],["2026-10-27",6147],["2026-10-28",6147],["2026-10-29",6147],["2026-10-30",6147],["2026-10-31",6147],["2026-11-01",6147],["2026-11-02",6759]],"2027-01-12":[["2026-09-03",8594],["2026-09-04",8594],["2026-09-05",8594],["2026-09-06",8594],["2026-09-07",8594],["2026-09-08",8594],["2026-09-09",8594],["2026-09-10",8594],["2026-09-11",8594],["2026-09-12",8594],["2026-09-13",8594],["2026-09-14",8594],["2026-09-15",8594],["2026-09-16",8594],["2026-09-17",8594],["2026-09-18",8594],["2026-09-19",8594],["2026-09-20",8594],["2026-09-21",8594],["2026-09-22",8594],["2026-09-23",8594],["2026-09-24",8692],["2026-09-25",8692],["2026-09-26",8692],["2026-09-27",8692],["2026-09-28",8692],["2026-09-29",8886],["2026-09-30",9582],["2026-10-01",9582],["2026-10-02",9582],["2026-10-03",9582],["2026-10-04",9582],["2026-10-05",9582],["2026-10-06",9582],["2026-10-07",9582],["2026-10-08",9582],["2026-10-09",9492],["2026-10-10",9492],["2026-10-11",9492],["2026-10-12",9492],["2026-10-13",9492],["2026-10-14",9492],["2026-10-15",9492],["2026-10-16",9492],["2026-10-17",9492],["2026-10-18",9492],["2026-10-19",9492],["2026-10-20",9492],["2026-10-21",9492],["2026-10-22",6306],["2026-10-23",6306],["2026-10-24",6147],["2026-10-25",6147],["2026-10-26",6147],["2026-10-27",6147],["2026-10-28",6147],["2026-10-29",6147],["2026-10-30",6147],["2026-10-31",6147],["2026-11-01",6147],["2026-11-02",6306]]},"SXR-DEL":{"2027-01-12":[["2026-09-03",8953],["2026-09-04",8906],["2026-09-05",8918],["2026-09-06",8912],["2026-09-07",8918],["2026-09-08",8911],["2026-09-09",8858],["2026-09-10",8847],["2026-09-11",8853],["2026-09-12",8926],["2026-09-13",8921],["2026-09-14",8895],["2026-09-15",8831],["2026-09-16",8902],["2026-09-17",8904],["2026-09-18",8929],["2026-09-19",8898],["2026-09-20",8922],["2026-09-21",8918],["2026-09-22",8940],["2026-09-23",8914],["2026-09-24",8985],["2026-09-25",9016],["2026-09-26",9007],["2026-09-27",9015],["2026-09-28",8994],["2026-09-29",9006],["2026-09-30",9001],["2026-10-01",9016],["2026-10-02",9066],["2026-10-03",9053],["2026-10-04",9068],["2026-10-05",9066],["2026-10-06",9067],["2026-10-07",9342],["2026-10-08",9377],["2026-10-09",9381],["2026-10-10",9382],["2026-10-11",9383],["2026-10-12",9383],["2026-10-13",9366],["2026-10-14",9363],["2026-10-15",9378],["2026-10-16",9366],["2026-10-17",9383],["2026-10-18",9383],["2026-10-19",9361],["2026-10-20",9354],["2026-10-21",9354],["2026-10-22",6909],["2026-10-23",6912],["2026-10-24",6913],["2026-10-25",6915],["2026-10-26",6911],["2026-10-27",6908],["2026-10-28",6900],["2026-10-29",6909],["2026-10-30",6905],["2026-10-31",6914],["2026-11-01",6829],["2026-11-02",6829]],"2027-01-13":[["2026-09-03",9092],["2026-09-04",9043],["2026-09-05",9055],["2026-09-06",9050],["2026-09-07",9056],["2026-09-08",9049],["2026-09-09",8993],["2026-09-10",8979],["2026-09-11",8999],["2026-09-12",9064],["2026-09-13",9059],["2026-09-14",9025],["2026-09-15",8968],["2026-09-16",9040],["2026-09-17",9042],["2026-09-18",9067],["2026-09-19",9035],["2026-09-20",9060],["2026-09-21",9055],["2026-09-22",9078],["2026-09-23",9060],["2026-09-24",9124],["2026-09-25",9149],["2026-09-26",9148],["2026-09-27",9153],["2026-09-28",9132],["2026-09-29",9146],["2026-09-30",9139],["2026-10-01",9158],["2026-10-02",9203],["2026-10-03",9190],["2026-10-04",9205],["2026-10-05",9203],["2026-10-06",9673],["2026-10-07",9656],["2026-10-08",9676],["2026-10-09",9671],["2026-10-10",9679],["2026-10-11",9958],["2026-10-12",9958],["2026-10-13",9837],["2026-10-14",9793],["2026-10-15",9919],["2026-10-16",9892],["2026-10-17",9914],["2026-10-18",9924],["2026-10-19",9903],["2026-10-20",9895],["2026-10-21",9861],["2026-10-22",8697],["2026-10-23",8335],["2026-10-24",7738],["2026-10-25",7738],["2026-10-26",7732],["2026-10-27",7729],["2026-10-28",7721],["2026-10-29",7728],["2026-10-30",7321],["2026-10-31",7315],["2026-11-01",6829],["2026-11-02",6829]],"2027-01-14":[["2026-09-03",9094],["2026-09-04",9048],["2026-09-05",9055],["2026-09-06",9050],["2026-09-07",9056],["2026-09-08",9049],["2026-09-09",8993],["2026-09-10",8980],["2026-09-11",8998],["2026-09-12",9064],["2026-09-13",9059],["2026-09-14",9033],["2026-09-15",8971],["2026-09-16",9040],["2026-09-17",9043],["2026-09-18",9068],["2026-09-19",9035],["2026-09-20",9060],["2026-09-21",9056],["2026-09-22",9075],["2026-09-23",9053],["2026-09-24",9124],["2026-09-25",9134],["2026-09-26",9148],["2026-09-27",9153],["2026-09-28",9133],["2026-09-29",9142],["2026-09-30",9139],["2026-10-01",9149],["2026-10-02",9202],["2026-10-03",9190],["2026-10-04",9205],["2026-10-05",9204],["2026-10-06",9203],["2026-10-07",9346],["2026-10-08",9378],["2026-10-09",9382],["2026-10-10",9383],["2026-10-11",9383],["2026-10-12",9383],["2026-10-13",9309],["2026-10-14",9363],["2026-10-15",9381],["2026-10-16",9361],["2026-10-17",9377],["2026-10-18",9383],["2026-10-19",9360],["2026-10-20",9354],["2026-10-21",9360],["2026-10-22",6909],["2026-10-23",6912],["2026-10-24",6913],["2026-10-25",6915],["2026-10-26",6911],["2026-10-27",6909],["2026-10-28",6907],["2026-10-29",6907],["2026-10-30",6905],["2026-10-31",6909],["2026-11-01",6829],["2026-11-02",6829]],"2027-01-15":[["2026-09-03",9094],["2026-09-04",9047],["2026-09-05",9055],["2026-09-06",9050],["2026-09-07",9056],["2026-09-08",9049],["2026-09-09",8996],["2026-09-10",8980],["2026-09-11",8999],["2026-09-12",9064],["2026-09-13",9059],["2026-09-14",9025],["2026-09-15",8971],["2026-09-16",9040],["2026-09-17",9042],["2026-09-18",9067],["2026-09-19",9035],["2026-09-20",9060],["2026-09-21",9048],["2026-09-22",9074],["2026-09-23",9053],["2026-09-24",9126],["2026-09-25",9154],["2026-09-26",9148],["2026-09-27",9153],["2026-09-28",9135],["2026-09-29",9136],["2026-09-30",9138],["2026-10-01",9149],["2026-10-02",9202],["2026-10-03",9190],["2026-10-04",9205],["2026-10-05",9205],["2026-10-06",9204],["2026-10-07",9347],["2026-10-08",9377],["2026-10-09",9093],["2026-10-10",9090],["2026-10-11",9093],["2026-10-12",9093],["2026-10-13",9086],["2026-10-14",9359],["2026-10-15",9361],["2026-10-16",9354],["2026-10-17",9380],["2026-10-18",9376],["2026-10-19",9356],["2026-10-20",9353],["2026-10-21",9337],["2026-10-22",6911],["2026-10-23",6915],["2026-10-24",6915],["2026-10-25",6915],["2026-10-26",6913],["2026-10-27",6908],["2026-10-28",6900],["2026-10-29",6911],["2026-10-30",6910],["2026-10-31",6914],["2026-11-01",6829],["2026-11-02",6829]],"2027-01-16":[["2026-09-03",9100],["2026-09-04",9047],["2026-09-05",9055],["2026-09-06",9050],["2026-09-07",9056],["2026-09-08",9049],["2026-09-09",8996],["2026-09-10",8981],["2026-09-11",8994],["2026-09-12",9064],["2026-09-13",9059],["2026-09-14",9027],["2026-09-15",8968],["2026-09-16",9040],["2026-09-17",9042],["2026-09-18",9068],["2026-09-19",9035],["2026-09-20",9060],["2026-09-21",9048],["2026-09-22",9076],["2026-09-23",9053],["2026-09-24",9124],["2026-09-25",9149],["2026-09-26",9147],["2026-09-27",9153],["2026-09-28",9132],["2026-09-29",9147],["2026-09-30",9144],["2026-10-01",9154],["2026-10-02",9202],["2026-10-03",9190],["2026-10-04",9205],["2026-10-05",9204],["2026-10-06",9203],["2026-10-07",9344],["2026-10-08",9370],["2026-10-09",9374],["2026-10-10",9380],["2026-10-11",9383],["2026-10-12",9383],["2026-10-13",9309],["2026-10-14",9381],["2026-10-15",9381],["2026-10-16",9367],["2026-10-17",9384],["2026-10-18",9383],["2026-10-19",9361],["2026-10-20",9354],["2026-10-21",9359],["2026-10-22",6909],["2026-10-23",6914],["2026-10-24",6913],["2026-10-25",6915],["2026-10-26",6911],["2026-10-27",6908],["2026-10-28",6900],["2026-10-29",6907],["2026-10-30",6905],["2026-10-31",6915],["2026-11-01",6829],["2026-11-02",6829]],"2027-01-17":[["2026-09-03",9100],["2026-09-04",9047],["2026-09-05",9055],["2026-09-06",9050],["2026-09-07",9056],["2026-09-08",9049],["2026-09-09",8992],["2026-09-10",8993],["2026-09-11",8990],["2026-09-12",9064],["2026-09-13",9059],["2026-09-14",9035],["2026-09-15",8966],["2026-09-16",9040],["2026-09-17",9048],["2026-09-18",9074],["2026-09-19",9038],["2026-09-20",9060],["2026-09-21",9048],["2026-09-22",9074],["2026-09-23",9069],["2026-09-24",9124],["2026-09-25",9150],["2026-09-26",9576],["2026-09-27",9582],["2026-09-28",9582],["2026-09-29",9595],["2026-09-30",9590],["2026-10-01",9593],["2026-10-02",9735],["2026-10-03",9713],["2026-10-04",9729],["2026-10-05",9729],["2026-10-06",9728],["2026-10-07",9735],["2026-10-08",9754],["2026-10-09",9759],["2026-10-10",9958],["2026-10-11",9958],["2026-10-12",9958],["2026-10-13",9837],["2026-10-14",9793],["2026-10-15",9919],["2026-10-16",9892],["2026-10-17",9914],["2026-10-18",9924],["2026-10-19",9903],["2026-10-20",9895],["2026-10-21",9898],["2026-10-22",6909],["2026-10-23",6912],["2026-10-24",6914],["2026-10-25",6915],["2026-10-26",6913],["2026-10-27",6909],["2026-10-28",6900],["2026-10-29",6907],["2026-10-30",6905],["2026-10-31",6914],["2026-11-01",6829],["2026-11-02",6829]],"2027-01-18":[["2026-09-03",8955],["2026-09-04",8909],["2026-09-05",8918],["2026-09-06",8912],["2026-09-07",8918],["2026-09-08",8911],["2026-09-09",8850],["2026-09-10",8842],["2026-09-11",8857],["2026-09-12",8926],["2026-09-13",8921],["2026-09-14",8895],["2026-09-15",8834],["2026-09-16",8902],["2026-09-17",8904],["2026-09-18",8929],["2026-09-19",8898],["2026-09-20",8922],["2026-09-21",8918],["2026-09-22",8936],["2026-09-23",8916],["2026-09-24",8989],["2026-09-25",9011],["2026-09-26",9007],["2026-09-27",9015],["2026-09-28",8994],["2026-09-29",9006],["2026-09-30",9006],["2026-10-01",9020],["2026-10-02",9065],["2026-10-03",9053],["2026-10-04",9068],["2026-10-05",9066],["2026-10-06",9069],["2026-10-07",9347],["2026-10-08",9370],["2026-10-09",9374],["2026-10-10",9383],["2026-10-11",9383],["2026-10-12",9383],["2026-10-13",9309],["2026-10-14",9386],["2026-10-15",9381],["2026-10-16",9363],["2026-10-17",9383],["2026-10-18",9383],["2026-10-19",9361],["2026-10-20",9359],["2026-10-21",9359],["2026-10-22",6914],["2026-10-23",6912],["2026-10-24",6914],["2026-10-25",6915],["2026-10-26",6913],["2026-10-27",6908],["2026-10-28",6907],["2026-10-29",6907],["2026-10-30",6905],["2026-10-31",6914],["2026-11-01",6829],["2026-11-02",6829]],"2027-01-19":[["2026-09-03",8955],["2026-09-04",8911],["2026-09-05",8918],["2026-09-06",8912],["2026-09-07",8918],["2026-09-08",8911],["2026-09-09",8858],["2026-09-10",8852],["2026-09-11",8861],["2026-09-12",8926],["2026-09-13",8921],["2026-09-14",8895],["2026-09-15",8833],["2026-09-16",8902],["2026-09-17",8904],["2026-09-18",8935],["2026-09-19",8900],["2026-09-20",8922],["2026-09-21",8917],["2026-09-22",8937],["2026-09-23",8922],["2026-09-24",8986],["2026-09-25",8995],["2026-09-26",9009],["2026-09-27",9015],["2026-09-28",9003],["2026-09-29",9010],["2026-09-30",9006],["2026-10-01",9012],["2026-10-02",9066],["2026-10-03",9053],["2026-10-04",9068],["2026-10-05",9068],["2026-10-06",9066],["2026-10-07",9344],["2026-10-08",9377],["2026-10-09",9381],["2026-10-10",9382],["2026-10-11",9383],["2026-10-12",9383],["2026-10-13",9378],["2026-10-14",9365],["2026-10-15",9381],["2026-10-16",9363],["2026-10-17",9384],["2026-10-18",9383],["2026-10-19",9362],["2026-10-20",9356],["2026-10-21",9349],["2026-10-22",6911],["2026-10-23",6912],["2026-10-24",6913],["2026-10-25",6915],["2026-10-26",6913],["2026-10-27",6909],["2026-10-28",6912],["2026-10-29",6907],["2026-10-30",6905],["2026-10-31",6914],["2026-11-01",6829],["2026-11-02",6829]],"2027-01-20":[["2026-09-03",9999],["2026-09-04",9950],["2026-09-05",9969],["2026-09-06",9963],["2026-09-07",9970],["2026-09-08",9962],["2026-09-09",9953],["2026-09-10",9988],["2026-09-11",9521],["2026-09-12",9177],["2026-09-13",9569],["2026-09-14",9566],["2026-09-15",9513],["2026-09-16",9593],["2026-09-17",9609],["2026-09-18",9623],["2026-09-19",9580],["2026-09-20",9599],["2026-09-21",9594],["2026-09-22",9601],["2026-09-23",9571],["2026-09-24",9569],["2026-09-25",9596],["2026-09-26",9576],["2026-09-27",9582],["2026-09-28",9582],["2026-09-29",9595],["2026-09-30",9590],["2026-10-01",9593],["2026-10-02",9675],["2026-10-03",9662],["2026-10-04",9678],["2026-10-05",9678],["2026-10-06",9668],["2026-10-07",9638],["2026-10-08",9670],["2026-10-09",9671],["2026-10-10",9672],["2026-10-11",9673],["2026-10-12",9673],["2026-10-13",9673],["2026-10-14",9666],["2026-10-15",9919],["2026-10-16",9892],["2026-10-17",9914],["2026-10-18",9924],["2026-10-19",9903],["2026-10-20",9502],["2026-10-21",9502],["2026-10-22",8697],["2026-10-23",8702],["2026-10-24",8703],["2026-10-25",7738],["2026-10-26",7735],["2026-10-27",7729],["2026-10-28",7721],["2026-10-29",7728],["2026-10-30",7727],["2026-10-31",7728],["2026-11-01",6829],["2026-11-02",6829]],"2027-01-21":[["2026-09-03",9092],["2026-09-04",9043],["2026-09-05",9055],["2026-09-06",9050],["2026-09-07",9056],["2026-09-08",9049],["2026-09-09",8997],["2026-09-10",8981],["2026-09-11",8998],["2026-09-12",9064],["2026-09-13",9059],["2026-09-14",9025],["2026-09-15",8968],["2026-09-16",9044],["2026-09-17",9042],["2026-09-18",9073],["2026-09-19",9038],["2026-09-20",9060],["2026-09-21",9056],["2026-09-22",9075],["2026-09-23",9060],["2026-09-24",9123],["2026-09-25",9134],["2026-09-26",9148],["2026-09-27",9153],["2026-09-28",9132],["2026-09-29",9146],["2026-09-30",9145],["2026-10-01",9046],["2026-10-02",9202],["2026-10-03",9190],["2026-10-04",9205],["2026-10-05",9205],["2026-10-06",9206],["2026-10-07",9344],["2026-10-08",9378],["2026-10-09",9382],["2026-10-10",9383],["2026-10-11",9383],["2026-10-12",9383],["2026-10-13",9309],["2026-10-14",9365],["2026-10-15",9367],["2026-10-16",9368],["2026-10-17",9380],["2026-10-18",9383],["2026-10-19",9363],["2026-10-20",9358],["2026-10-21",9354],["2026-10-22",6909],["2026-10-23",6912],["2026-10-24",6914],["2026-10-25",6915],["2026-10-26",6911],["2026-10-27",6910],["2026-10-28",6900],["2026-10-29",6910],["2026-10-30",6905],["2026-10-31",6915],["2026-11-01",6829],["2026-11-02",6829]],"2027-01-22":[["2026-09-03",9100],["2026-09-04",9049],["2026-09-05",9055],["2026-09-06",9050],["2026-09-07",9056],["2026-09-08",9049],["2026-09-09",8993],["2026-09-10",8984],["2026-09-11",8997],["2026-09-12",9064],["2026-09-13",9059],["2026-09-14",9027],["2026-09-15",8968],["2026-09-16",9040],["2026-09-17",9042],["2026-09-18",9073],["2026-09-19",9038],["2026-09-20",9060],["2026-09-21",9056],["2026-09-22",9074],["2026-09-23",9053],["2026-09-24",9116],["2026-09-25",9142],["2026-09-26",9148],["2026-09-27",9153],["2026-09-28",9132],["2026-09-29",9142],["2026-09-30",9145],["2026-10-01",9097],["2026-10-02",9202],["2026-10-03",9190],["2026-10-04",9205],["2026-10-05",9205],["2026-10-06",9512],["2026-10-07",9342],["2026-10-08",9378],["2026-10-09",9382],["2026-10-10",9380],["2026-10-11",9383],["2026-10-12",9383],["2026-10-13",9309],["2026-10-14",9365],["2026-10-15",9379],["2026-10-16",9364],["2026-10-17",9384],["2026-10-18",9383],["2026-10-19",9361],["2026-10-20",9366],["2026-10-21",9359],["2026-10-22",6911],["2026-10-23",6912],["2026-10-24",6914],["2026-10-25",6915],["2026-10-26",6913],["2026-10-27",6909],["2026-10-28",6912],["2026-10-29",6909],["2026-10-30",6905],["2026-10-31",6914],["2026-11-01",6829],["2026-11-02",6829]],"2027-01-23":[["2026-09-03",9094],["2026-09-04",9043],["2026-09-05",9055],["2026-09-06",9050],["2026-09-07",9056],["2026-09-08",9049],["2026-09-09",8992],["2026-09-10",8980],["2026-09-11",8997],["2026-09-12",9064],["2026-09-13",9059],["2026-09-14",9029],["2026-09-15",8966],["2026-09-16",9040],["2026-09-17",9043],["2026-09-18",9068],["2026-09-19",9035],["2026-09-20",9060],["2026-09-21",9056],["2026-09-22",9074],["2026-09-23",9063],["2026-09-24",9116],["2026-09-25",9142],["2026-09-26",9142],["2026-09-27",9153],["2026-09-28",9139],["2026-09-29",9142],["2026-09-30",9144],["2026-10-01",9149],["2026-10-02",9202],["2026-10-03",9190],["2026-10-04",9205],["2026-10-05",9205],["2026-10-06",9204],["2026-10-07",9344],["2026-10-08",9370],["2026-10-09",9374],["2026-10-10",9380],["2026-10-11",9383],["2026-10-12",9383],["2026-10-13",9375],["2026-10-14",9363],["2026-10-15",9377],["2026-10-16",9367],["2026-10-17",9384],["2026-10-18",9383],["2026-10-19",9363],["2026-10-20",9366],["2026-10-21",9352],["2026-10-22",6914],["2026-10-23",6914],["2026-10-24",6913],["2026-10-25",6915],["2026-10-26",6911],["2026-10-27",6909],["2026-10-28",6900],["2026-10-29",6909],["2026-10-30",6912],["2026-10-31",6915],["2026-11-01",6829],["2026-11-02",6829]],"2027-01-24":[["2026-09-03",9062],["2026-09-04",9043],["2026-09-05",9055],["2026-09-06",9050],["2026-09-07",9056],["2026-09-08",9049],["2026-09-09",8997],["2026-09-10",8989],["2026-09-11",8990],["2026-09-12",9064],["2026-09-13",9059],["2026-09-14",9036],["2026-09-15",8968],["2026-09-16",9040],["2026-09-17",9042],["2026-09-18",9071],["2026-09-19",9038],["2026-09-20",9060],["2026-09-21",9056],["2026-09-22",9076],["2026-09-23",9059],["2026-09-24",9116],["2026-09-25",9142],["2026-09-26",10614],["2026-09-27",10620],["2026-09-28",10598],["2026-09-29",10613],["2026-09-30",10610],["2026-10-01",10585],["2026-10-02",10618],["2026-10-03",10603],["2026-10-04",10620],["2026-10-05",10620],["2026-10-06",10621],["2026-10-07",10778],["2026-10-08",10826],["2026-10-09",11395],["2026-10-10",10877],["2026-10-11",10878],["2026-10-12",11864],["2026-10-13",11720],["2026-10-14",11590],["2026-10-15",11716],["2026-10-16",11676],["2026-10-17",11804],["2026-10-18",11814],["2026-10-19",11788],["2026-10-20",11779],["2026-10-21",11744],["2026-10-22",6909],["2026-10-23",6912],["2026-10-24",6913],["2026-10-25",6915],["2026-10-26",6913],["2026-10-27",6908],["2026-10-28",6900],["2026-10-29",6913],["2026-10-30",6905],["2026-10-31",6909],["2026-11-01",6829],["2026-11-02",6829]]}},"typ":{"DEL-SXR":{"lo":4000,"hi":5200},"SXR-DEL":{"lo":5200,"hi":6900}},"events":[{"when":"Jan 2020","dir":"both","what":"Winter fares on Kashmir routes reported costlier than foreign destinations","fare":"n/a (qualitative)","src":"https://kashmirreader.com/2020/01/17/kashmir-airfares-costlier-than-foreign-destinations/"},{"when":"Winter (snowfall closures, several years)","dir":"SXR-DEL","what":"Airport/highway shut for days by snow; fares jump on reopening","fare":"3500-5000 -> 10000-15000","src":"https://www.tribuneindia.com/news/archive/airfares-shoot-up-due-to-bad-weather-330129"},{"when":"Feb 2025","dir":"both","what":"Srinagar trips reported pricier than Colombo","fare":"n/a (qualitative)","src":"https://etvbharat.com/en/!bharat/flight-fares-surge-srinagar-trips-now-pricier-than-colombo-enn25022405750"},{"when":"Mar 2024","dir":"DEL-SXR","what":"Average fare jumped from usual level","fare":"4000-5000 -> 12000-15000","src":"https://m.greaterkashmir.com/article/tourism-blues-kashmir-airfares-soar-higher-than-international-flights/288572"},{"when":"Jun 2024","dir":"SXR-DEL","what":"Eid holiday demand","fare":"up to 16000","src":"https://m.greaterkashmir.com/article/eid-homecoming-turns-costly-for-kashmiris-as-airfares-to-srinagar-skyrocket/307659"},{"when":"Apr 2025","dir":"SXR-DEL","what":"Panic exodus after Pahalgam attack; govt asked airlines to cap fares","fare":"up to 65000","src":"https://www.outlookindia.com/amp/story/national/when-tragedy-becomes-business-opportunity-airlines-surge-fare-of-flights-out-of-kashmir"},{"when":"Sep 2025","dir":"SXR-DEL","what":"Srinagar-Jammu highway closure","fare":"13000-15000","src":"https://m.greaterkashmir.com/article/airlines-milk-highway-closure-crisis/430972"}]};
+const OUT = "DEL-SXR", RET = "SXR-DEL";
+const MS = 864e5;
+const $ = (id) => document.getElementById(id);
+const inr = (n) => "₹" + Math.round(n).toLocaleString("en-IN");
+const d = (s) => new Date(s + "T00:00:00Z");
+const fmt = (s, o = { day: "numeric", month: "short" }) => d(s).toLocaleDateString("en-GB", { ...o, timeZone: "UTC" });
+const dow = (s) => d(s).toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" });
+const addDays = (s, n) => new Date(d(s).getTime() + n * MS).toISOString().slice(0, 10);
+const daysBetween = (a, b) => Math.round((d(b) - d(a)) / MS);
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+
+const outDates = Object.keys(DATA.grid[OUT]).sort();
+const retDates = Object.keys(DATA.grid[RET]).sort();
+const allRet = []; for (let s = retDates[0]; s <= retDates[retDates.length - 1]; s = addDays(s, 1)) allRet.push(s);
+
+const state = {
+  pax: +(store.get("kfw.pax") || 2),
+  nonstop: store.get("kfw.nonstop") === "1",
+  target: +(store.get("kfw.target") || 6000),
+  out: "2027-01-07", ret: "2027-01-14",
+};
+
+function cheapest(leg, date) {
+  const list = (DATA.grid[leg][date] || []).filter((f) => !state.nonstop || f.s === 0);
+  return list.length ? list[0] : null;
+}
+
+function verdict(leg, date) {
+  const h = DATA.hist[leg][date];
+  if (!h || !h.length) return null;
+  const typ = DATA.typ[leg];
+  const cur = h[h.length - 1][1];
+  const low = Math.min(...h.map((p) => p[1]));
+  const first = h[0][1];
+  const deadline = addDays(date, -30);
+  const base = { cur, low, first, typ, deadline };
+  if (cur <= state.target) return { ...base, buy: true, text: `At or under your target of ${inr(state.target)}.` };
+  if (cur <= typ.hi) return { ...base, buy: true, text: `${inr(cur)} is inside Google's normal range (${inr(typ.lo)}–${inr(typ.hi)}).` };
+  if (cur <= low * 1.03) return { ...base, buy: true, text: `${inr(cur)} is the lowest in 60 days (was ${inr(first)}).` };
+  return { ...base, buy: false, text: `${inr(cur)} is above normal (${inr(typ.lo)}–${inr(typ.hi)}). Buy if it drops to ${inr(low)}, otherwise by ${fmt(deadline)}.` };
+}
+
+const ICON_OK = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.5l2.5 2.5L10 3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const ICON_WAIT = '<svg viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="4.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6 3.6V6l1.6 1.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+
+function legBlock(leg, date, color, name) {
+  const f = cheapest(leg, date);
+  const v = verdict(leg, date);
+  const pill = v ? `<span class="pill ${v.buy ? "good" : "warn"}">${v.buy ? ICON_OK + "Book now" : ICON_WAIT + "Wait, book by " + fmt(v.deadline)}</span>` : "";
+  return `<div class="leg-head"><span class="swatch" style="background:${color}"></span><span class="label">${name} · ${dow(date)} ${fmt(date)}</span></div>
+    ${f ? `<span class="fare num">${inr(f.p)} <span class="why" style="display:inline">per person</span></span>
+    <span class="why mono">${f.a} ${f.f} · ${f.d}–${f.r} · ${f.s ? f.s + " stop" : "nonstop"}</span>` : `<span class="why">No ${state.nonstop ? "nonstop " : ""}fares found for this date.</span>`}
+    ${pill}${v ? `<p class="why">${v.text}</p>` : ""}`;
+}
+
+function renderSummary() {
+  const o = cheapest(OUT, state.out), r = cheapest(RET, state.ret);
+  $("sum-label").textContent = `Round trip for ${state.pax} ${state.pax === 1 ? "person" : "people"}${state.nonstop ? ", nonstop" : ""}`;
+  $("sum-total").textContent = o && r ? inr((o.p + r.p) * state.pax) : "—";
+  $("sum-dates").textContent = `${dow(state.out)} ${fmt(state.out)} → ${dow(state.ret)} ${fmt(state.ret)} · ${daysBetween(state.out, state.ret)} nights`;
+  $("leg-out").innerHTML = legBlock(OUT, state.out, "var(--out)", "Delhi → Srinagar");
+  $("leg-ret").innerHTML = legBlock(RET, state.ret, "var(--ret)", "Srinagar → Delhi");
+}
+
+function renderHeatmap() {
+  const hm = $("hm");
+  const cells = [];
+  let min = Infinity, max = -Infinity, best = null;
+  for (const o of outDates) for (const r of allRet) {
+    if (r <= o) continue;
+    const a = cheapest(OUT, o), b = cheapest(RET, r);
+    if (!a || !b) continue;
+    const v = a.p + b.p, stay = daysBetween(o, r);
+    min = Math.min(min, v); max = Math.max(max, v);
+    if (stay >= 5 && stay <= 16 && (!best || v < best.v)) best = { o, r, v };
+  }
+  hm.style.gridTemplateColumns = `56px repeat(${allRet.length}, minmax(40px, 1fr))`;
+  cells.push(`<div class="ax"><span>out ↓<br>back →</span></div>`);
+  for (const r of allRet) cells.push(`<div class="ax">${dow(r)}<br>${fmt(r, { day: "numeric" })} Jan</div>`);
+  for (const o of outDates) {
+    cells.push(`<div class="ax row">${dow(o)} ${fmt(o, { day: "numeric" })}</div>`);
+    for (const r of allRet) {
+      const a = cheapest(OUT, o), b = cheapest(RET, r);
+      if (r <= o) { cells.push(`<div></div>`); continue; }
+      if (!a || !b) { cells.push(`<div class="cell na" title="No fares collected for ${fmt(r)}" aria-hidden="true"></div>`); continue; }
+      const v = a.p + b.p, stay = daysBetween(o, r);
+      const t = max > min ? (v - min) / (max - min) : 0;
+      const pct = Math.round(t * 100);
+      const ink = t > 0.55 ? "#fff" : "var(--ink)";
+      const cls = ["cell", o === state.out && r === state.ret ? "sel" : "", best && best.o === o && best.r === r ? "best" : "", stay < 5 || stay > 16 ? "dim" : ""].join(" ");
+      cells.push(`<button class="${cls}" data-o="${o}" data-r="${r}" style="background:color-mix(in oklab, var(--seq-hi) ${pct}%, var(--seq-lo));color:${ink}"
+        title="${fmt(o)} → ${fmt(r)} (${stay} nights): ${inr(v)} per person, ${inr(v * state.pax)} for ${state.pax}"
+        aria-label="Leave ${fmt(o)}, return ${fmt(r)}, ${stay} nights, ${inr(v)} per person">${(v / 1000).toFixed(1)}k</button>`);
+    }
+  }
+  hm.innerHTML = cells.join("");
+}
+
+function chart(el, leg, date, color, title) {
+  const h = DATA.hist[leg][date];
+  const typ = DATA.typ[leg];
+  if (!h) { el.innerHTML = `<div class="chart-head"><strong>${title}</strong></div><p class="why">No price history for ${fmt(date)}.</p>`; return; }
+  const W = 520, H = 230, L = 54, R = 14, T = 14, B = 28;
+  const xs = h.map((p) => d(p[0]).getTime());
+  const allY = [...DATA.hist[OUT][state.out] || [], ...DATA.hist[RET][state.ret] || []].map((p) => p[1]);
+  const yLo = Math.min(typ.lo, DATA.typ[OUT].lo, DATA.typ[RET].lo, state.target, ...allY) * 0.94;
+  const yHi = Math.max(typ.hi, ...allY) * 1.04;
+  const X = (t) => L + ((t - xs[0]) / (xs[xs.length - 1] - xs[0])) * (W - L - R);
+  const Y = (v) => T + (1 - (v - yLo) / (yHi - yLo)) * (H - T - B);
+  const step = Math.ceil((yHi - yLo) / 4 / 500) * 500;
+  let grid = "";
+  for (let v = Math.ceil(yLo / step) * step; v <= yHi; v += step)
+    grid += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--rule)" stroke-width="1"/><text x="${L - 8}" y="${Y(v) + 4}" text-anchor="end">${(v / 1000).toFixed(1)}k</text>`;
+  let xt = "";
+  for (let i = 0; i < h.length; i += 14) xt += `<text x="${X(xs[i])}" y="${H - 8}" text-anchor="middle">${fmt(h[i][0])}</text>`;
+  let path = `M${X(xs[0])},${Y(h[0][1])}`;
+  for (let i = 1; i < h.length; i++) path += `H${X(xs[i])}V${Y(h[i][1])}`;
+  const last = h[h.length - 1];
+  const tgt = state.target >= yLo && state.target <= yHi
+    ? `<line x1="${L}" x2="${W - R}" y1="${Y(state.target)}" y2="${Y(state.target)}" stroke="var(--ink-2)" stroke-dasharray="4 4" stroke-width="1.2"/><text x="${(L + W - R) / 2}" y="${Y(state.target) - 5}" text-anchor="middle">your target ${inr(state.target)}</text>` : "";
+  const v = verdict(leg, date);
+  el.innerHTML = `<div class="chart-head"><strong>${title}</strong><span class="why mono">${dow(date)} ${fmt(date)} · now ${inr(last[1])}</span></div>
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${title}: cheapest fare went from ${inr(h[0][1])} on ${fmt(h[0][0])} to ${inr(last[1])} on ${fmt(last[0])}">
+      <rect x="${L}" y="${Y(typ.hi)}" width="${W - L - R}" height="${Y(typ.lo) - Y(typ.hi)}" fill="var(--band)"/>
+      <text x="${L + 6}" y="${Y(typ.lo) - 6}">normal ${inr(typ.lo)}–${inr(typ.hi)}</text>
+      ${grid}${xt}${tgt}
+      <path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="${X(xs[xs.length - 1])}" cy="${Y(last[1])}" r="4.5" fill="${color}" stroke="var(--panel)" stroke-width="2"/>
+      <g class="hover" visibility="hidden"><line y1="${T}" y2="${H - B}" stroke="var(--ink-3)" stroke-width="1"/><circle r="4.5" fill="${color}" stroke="var(--panel)" stroke-width="2"/></g>
+      <rect class="hit" x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}" fill="transparent"/>
+    </svg><div class="tip" hidden></div>
+    ${v ? `<p class="why" style="margin-top:8px">${v.text}</p>` : ""}`;
+  const svg = el.querySelector("svg"), g = svg.querySelector(".hover"), tip = el.querySelector(".tip");
+  const move = (ev) => {
+    const r = svg.getBoundingClientRect();
+    const sx = ((ev.clientX - r.left) / r.width) * W;
+    let i = 0, best = Infinity;
+    xs.forEach((t, k) => { const dd = Math.abs(X(t) - sx); if (dd < best) { best = dd; i = k; } });
+    const px = X(xs[i]), py = Y(h[i][1]);
+    g.setAttribute("visibility", "visible");
+    g.querySelector("line").setAttribute("x1", px); g.querySelector("line").setAttribute("x2", px);
+    g.querySelector("circle").setAttribute("cx", px); g.querySelector("circle").setAttribute("cy", py);
+    tip.hidden = false;
+    tip.innerHTML = `<strong>${inr(h[i][1])}</strong> per person<br>if bought on ${fmt(h[i][0], { weekday: "short", day: "numeric", month: "short" })} · ${daysBetween(h[i][0], date)} days before`;
+    const left = (px / W) * r.width, top = (py / H) * r.height + svg.offsetTop;
+    tip.style.left = Math.min(Math.max(left, 90), r.width - 70) + "px";
+    tip.style.top = top + "px";
+  };
+  const hide = () => { g.setAttribute("visibility", "hidden"); tip.hidden = true; };
+  const hit = svg.querySelector(".hit");
+  hit.addEventListener("pointermove", move); hit.addEventListener("pointerdown", move); hit.addEventListener("pointerleave", hide);
+}
+
+function flightTable(el, leg, date, title) {
+  const list = (DATA.grid[leg][date] || []).filter((f) => !state.nonstop || f.s === 0);
+  el.innerHTML = `<div class="chart-head"><strong>${title}</strong><span class="why mono">${dow(date)} ${fmt(date)} · ${list.length} flights</span></div>
+    <div class="tbl"><table><thead><tr><th>Flight</th><th>Dep–Arr</th><th>Stops</th><th class="r">Per person</th><th class="r">× ${state.pax}</th></tr></thead><tbody>
+    ${list.map((f, i) => `<tr class="${i === 0 ? "cheap" : ""}"><td>${f.a}<br><span class="mono why">${f.f}</span></td><td class="mono">${f.d}–${f.r}</td>
+      <td class="${f.s ? "stops1" : "stops0"}">${f.s ? f.s + " stop" : "Nonstop"}</td><td class="r mono">${inr(f.p)}</td><td class="r mono">${inr(f.p * state.pax)}</td></tr>`).join("")
+      || `<tr><td colspan="5" class="why">No ${state.nonstop ? "nonstop " : ""}fares collected for this date.</td></tr>`}
+    </tbody></table></div>`;
+}
+
+function renderEvents() {
+  $("events").innerHTML = DATA.events.map((e) => `<div class="event"><span class="label">${e.when} · ${e.dir.replace("-", " → ")}</span>
+    <span>${e.what}</span><span class="fare">${e.fare.replace(/->/g, "→").replace(/(\d{4,})/g, (m) => inr(+m))}</span>
+    <a href="${e.src}" target="_blank" rel="noopener">Source: ${new URL(e.src).hostname.replace("www.", "").replace("m.", "")}</a></div>`).join("");
+}
+
+function render() {
+  $("pax").textContent = state.pax;
+  $("nonstop").checked = state.nonstop;
+  renderSummary();
+  renderHeatmap();
+  chart($("ch-out"), OUT, state.out, "var(--out)", "Delhi → Srinagar");
+  chart($("ch-ret"), RET, state.ret, "var(--ret)", "Srinagar → Delhi");
+  flightTable($("fl-out"), OUT, state.out, "Delhi → Srinagar");
+  flightTable($("fl-ret"), RET, state.ret, "Srinagar → Delhi");
+}
+
+$("asof").textContent = fmt(DATA.asOf, { day: "numeric", month: "short", year: "numeric" }) + ` · ${daysBetween(DATA.asOf, "2027-01-07")} days before 7 Jan`;
+$("target").value = state.target;
+$("pax-minus").onclick = () => { state.pax = Math.max(1, state.pax - 1); store.set("kfw.pax", state.pax); render(); };
+$("pax-plus").onclick = () => { state.pax = Math.min(9, state.pax + 1); store.set("kfw.pax", state.pax); render(); };
+$("nonstop").onchange = (e) => { state.nonstop = e.target.checked; store.set("kfw.nonstop", state.nonstop ? "1" : "0"); render(); };
+$("target").oninput = (e) => { const v = +e.target.value; if (v >= 1000) { state.target = v; store.set("kfw.target", v); render(); } };
+$("hm").addEventListener("click", (e) => { const c = e.target.closest(".cell[data-o]"); if (!c) return; state.out = c.dataset.o; state.ret = c.dataset.r; render(); });
+renderEvents();
+render();
+</script>
+</body>
+</html>

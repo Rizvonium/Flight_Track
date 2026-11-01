@@ -3,6 +3,24 @@
 **Trip:** 2 adults, DEL→SXR on **Thu 7 Jan 2027**, return SXR→DEL 1–2 weeks later (13–22 Jan).
 **Analysis date:** 1 Nov 2026 (67 days before departure).
 
+## Interactive demo
+
+`public/index.html` is a self-contained page. All the data is baked in, so there's no backend and no API keys. With it you can:
+- change the number of travellers and see the totals update
+- switch to nonstop flights only
+- click any departure/return pair on a heat-map of round-trip prices
+- hover the 60-day price history for each leg
+- set your own price target and get a book-now / wait signal per leg
+
+**Deploy to Vercel**
+1. Go to [vercel.com/new](https://vercel.com/new) and import `rizvonium/flight_track`.
+2. Leave every setting as it is. `vercel.json` already tells Vercel to serve `public/` with no build step.
+3. Deploy. Vercel builds from the default branch, so either merge `claude/dazzling-hopper-2dysdy` first or pick that branch under *Settings → Git*.
+
+Or from a terminal: `npx vercel --prod` in the repo root.
+
+**After collecting new data**, rebuild the page with `python tracker/build_web.py` and push. Vercel redeploys automatically.
+
 ## Bottom line
 
 | Leg | What to do | Why |
