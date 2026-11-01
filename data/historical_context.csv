@@ -1,0 +1,11 @@
+period,direction,what_happened,fare_one_way_pp_inr,source
+"Jan 2020",both,"Winter fares on Kashmir routes reported costlier than foreign destinations","n/a (qualitative)",https://kashmirreader.com/2020/01/17/kashmir-airfares-costlier-than-foreign-destinations/
+"Winter (snowfall closures, several years)",SXR-DEL,"Airport/highway shut for days by snow; fares jump on reopening","3500-5000 -> 10000-15000",https://www.tribuneindia.com/news/archive/airfares-shoot-up-due-to-bad-weather-330129
+"Feb 2025",both,"Srinagar trips reported pricier than Colombo","n/a (qualitative)",https://etvbharat.com/en/!bharat/flight-fares-surge-srinagar-trips-now-pricier-than-colombo-enn25022405750
+"Mar 2024",DEL-SXR,"Average fare jumped from usual level","4000-5000 -> 12000-15000",https://m.greaterkashmir.com/article/tourism-blues-kashmir-airfares-soar-higher-than-international-flights/288572
+"Jun 2024",SXR-DEL,"Eid holiday demand","up to 16000",https://m.greaterkashmir.com/article/eid-homecoming-turns-costly-for-kashmiris-as-airfares-to-srinagar-skyrocket/307659
+"Apr 2025",SXR-DEL,"Panic exodus after Pahalgam attack; govt asked airlines to cap fares","up to 65000",https://www.outlookindia.com/amp/story/national/when-tragedy-becomes-business-opportunity-airlines-surge-fare-of-flights-out-of-kashmir
+"Sep 2025",SXR-DEL,"Srinagar-Jammu highway closure","13000-15000",https://m.greaterkashmir.com/article/airlines-milk-highway-closure-crisis/430972
+"Nov 2025-Oct 2026 (Google, 12 months)",DEL-SXR,"Cheapest month typically November; most expensive October; weekend round trips","Nov 7700-15000 RT; Oct 13000-16000 RT",https://www.google.com/travel/flights/flights-from-new-delhi-to-srinagar.html
+"Google typical range for Jan 2027 dates",DEL-SXR,"What Google calls a typical lowest one-way fare for these dates","4000-5200",tracker/history.py
+"Google typical range for Jan 2027 dates",SXR-DEL,"What Google calls a typical lowest one-way fare for these dates","5200-6900",tracker/history.py
